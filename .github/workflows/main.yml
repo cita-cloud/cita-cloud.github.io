@@ -1,0 +1,44 @@
+name: Hexo Blog Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository main branch
+      uses: actions/checkout@main
+
+    - name: Install node.js
+      uses: actions/setup-node@main
+      with:
+        node-version: "16.x"
+
+    - name: Install hexo
+      run: |
+        npm install hexo-cli -g
+        npm install
+
+    - name: Setup private key
+      env:
+        HEXO_DEPLOY_KEY: ${{ secrets.HEXO_DEPLOY_KEY }}
+      run: |
+        mkdir -p ~/.ssh/
+        echo "$HEXO_DEPLOY_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+    - name: Setup git settings
+      run: |
+        git config --global user.name "rink1969"
+        git config --global user.email "rink1969@gmail.com"
+
+    - name: Deploy hexo
+      run: |
+        hexo clean
+        hexo generate
+        hexo deploy
