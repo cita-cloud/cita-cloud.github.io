@@ -57,7 +57,7 @@ favicon:
   #android_manifest: /manifest.json
 
 # Custom Logo (Warning: Do not support scheme Mist)
-custom_logo: /uploads/logo.png
+custom_logo: /uploads/citahub.jpg
 
 # Creative Commons 4.0 International License.
 # See: https://creativecommons.org/about/cclicenses/
@@ -148,10 +148,12 @@ site_state: true
 # Key is the link label showing to end users.
 # Value before `||` delimiter is the target permalink, value after `||` delimiter is the name of Font Awesome icon.
 social:
-  GitHub: https://github.com/cita-cloud || fab fa-github
+  CITAHub仓库: https://github.com/citahub || fab fa-github
+  CITA-Cloud仓库: https://github.com/cita-cloud || fab fa-github
   E-Mail: mailto:contact@rivtower.com || fa fa-envelope
   论坛: https://talk.citahub.com || fab fa-stack-overflow
-  文档: https://cita-cloud-docs.readthedocs.io/zh_CN/latest/ || fa fa-book
+  CITAHub文档: https://docs.citahub.com/zh-CN/welcome || fa fa-book
+  CITA-Cloud文档: https://cita-cloud-docs.readthedocs.io/zh_CN/latest/ || fa fa-book
 
 
 social_icons:
@@ -394,7 +396,7 @@ bookmark:
 
 # `Follow me on GitHub` banner in the top-right corner.
 github_banner:
-  enable: true
+  enable: false
   permalink: https://github.com/cita-cloud
   title: Follow us on GitHub
 
