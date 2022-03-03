@@ -1,5 +1,5 @@
 ---
-title: cloud-init 快速开始
+title: 技术沙龙第十期-cloud-init快速开始
 date: 2022-03-03 05:57:01
 categories: 云计算
 ---
