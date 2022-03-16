@@ -14,8 +14,8 @@ npm install -g hexo-cli
 ## 克隆本仓库
 
 ```
-git clone git@github.com:cita-cloud/cita-cloud.github.io.git
-cd cita-cloud.github.io
+git clone git@github.com:cita-cloud/blog
+cd blog
 ```
 
 ## 创建新分支
@@ -35,7 +35,7 @@ hexo new new_post_title
 * 该命令在`source/_posts/`目录下创建`new_post_title`目录和`new_post_title.md`。
 * 在`new_post_title.md`中编辑新文章的内容。
 * 如果文章中需要插入图片。可以将图片文件`test.png`放在`new_post_title`目录下，文章中使用`![](test.png)`插入图片。
-* 如果要引用站内其他文章，文章的永久地址为`https://cita-cloud.github.io/{post_title}`。
+* 如果要引用站内其他文章，文章的永久地址为`https://tech.citahub.com/{post_title}`。
 
 
 ## 安装依赖包
