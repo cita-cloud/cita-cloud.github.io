@@ -685,9 +685,9 @@ hexo-server@^3.0.0:
     picocolors "^1.0.0"
     serve-static "^1.14.1"
 
-hexo-theme-next@^8.10.1:
-  version "8.10.1"
-  resolved "https://registry.yarnpkg.com/hexo-theme-next/-/hexo-theme-next-8.10.1.tgz#de5c3203316423c2fee083cc366f8ce10e02e84d"
+hexo-theme-next@^8.11.0:
+  version "8.11.0"
+  resolved "https://registry.yarnpkg.com/hexo-theme-next/-/hexo-theme-next-8.11.0.tgz#d8fa2882db13f5444aa5e7b883b042ba94c0ecc2"
 
 hexo-util@2.4.0:
   version "2.4.0"
