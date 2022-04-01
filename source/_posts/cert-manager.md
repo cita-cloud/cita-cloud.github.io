@@ -1,7 +1,7 @@
 ---
 title: 在 Kubernetes 中，免费 HTTPS 证书（cert-manager）
 date: 2022-04-01 19:28:06
-categories:
+categories: 云计算
 ---
 
 问题描述
