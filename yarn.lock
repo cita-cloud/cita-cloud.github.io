@@ -135,6 +135,10 @@ camel-case@^4.0.0:
     pascal-case "^3.1.2"
     tslib "^2.0.3"
 
+cargo-cp-artifact@^0.1:
+  version "0.1.6"
+  resolved "https://registry.yarnpkg.com/cargo-cp-artifact/-/cargo-cp-artifact-0.1.6.tgz#df1bc9dad036ae0f4230639a869182e1d5850f89"
+
 chalk@^2.4.2:
   version "2.4.2"
   resolved "https://registry.npmmirror.com/chalk/-/chalk-2.4.2.tgz"
@@ -343,12 +347,6 @@ domexception@^4.0.0:
   dependencies:
     webidl-conversions "^7.0.0"
 
-domhandler@^3.0.0:
-  version "3.3.0"
-  resolved "https://registry.npmmirror.com/domhandler/-/domhandler-3.3.0.tgz"
-  dependencies:
-    domelementtype "^2.0.1"
-
 domhandler@^4.2.0, domhandler@^4.2.2:
   version "4.3.0"
   resolved "https://registry.npmmirror.com/domhandler/-/domhandler-4.3.0.tgz"
@@ -359,7 +357,7 @@ dompurify@^2.4.0:
   version "2.4.0"
   resolved "https://registry.yarnpkg.com/dompurify/-/dompurify-2.4.0.tgz#c9c88390f024c2823332615c9e20a453cf3825dd"
 
-domutils@^2.0.0, domutils@^2.8.0:
+domutils@^2.8.0:
   version "2.8.0"
   resolved "https://registry.npmmirror.com/domutils/-/domutils-2.8.0.tgz"
   dependencies:
@@ -651,21 +649,7 @@ hexo-theme-next@^8.13.2:
   version "8.13.2"
   resolved "https://registry.yarnpkg.com/hexo-theme-next/-/hexo-theme-next-8.13.2.tgz#10f92e66529a158cdfa3def0eb8e95df3bbb6840"
 
-hexo-util@2.4.0:
-  version "2.4.0"
-  resolved "https://registry.npmmirror.com/hexo-util/-/hexo-util-2.4.0.tgz"
-  dependencies:
-    bluebird "^3.5.2"
-    camel-case "^4.0.0"
-    cross-spawn "^7.0.0"
-    deepmerge "^4.2.2"
-    highlight.js "^10.0.0"
-    htmlparser2 "^4.0.0"
-    prismjs "^1.17.1"
-    strip-indent "^3.0.0"
-    striptags "^3.1.1"
-
-hexo-util@^2.0.0, hexo-util@^2.1.0, hexo-util@^2.7.0:
+hexo-util@2.7.0, hexo-util@^2.0.0, hexo-util@^2.1.0, hexo-util@^2.7.0:
   version "2.7.0"
   resolved "https://registry.yarnpkg.com/hexo-util/-/hexo-util-2.7.0.tgz#13d09292e79d260db35399710b3e19f3995443a3"
   dependencies:
@@ -678,11 +662,12 @@ hexo-util@^2.0.0, hexo-util@^2.1.0, hexo-util@^2.7.0:
     prismjs "^1.17.1"
     strip-indent "^3.0.0"
 
-hexo-word-counter@^0.0.3:
-  version "0.0.3"
-  resolved "https://registry.npmmirror.com/hexo-word-counter/-/hexo-word-counter-0.0.3.tgz"
+hexo-word-counter@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/hexo-word-counter/-/hexo-word-counter-0.1.0.tgz#68e37bfaab9de97d9b0577a2fdcd2bfb2b2a0248"
   dependencies:
-    hexo-util "2.4.0"
+    cargo-cp-artifact "^0.1"
+    hexo-util "2.7.0"
 
 hexo@^6.3.0:
   version "6.3.0"
@@ -713,10 +698,6 @@ hexo@^6.3.0:
     titlecase "^1.1.3"
     warehouse "^4.0.2"
 
-highlight.js@^10.0.0:
-  version "10.7.3"
-  resolved "https://registry.npmmirror.com/highlight.js/-/highlight.js-10.7.3.tgz"
-
 highlight.js@^11.0.1:
   version "11.4.0"
   resolved "https://registry.npmmirror.com/highlight.js/-/highlight.js-11.4.0.tgz"
@@ -726,15 +707,6 @@ html-encoding-sniffer@^3.0.0:
   resolved "https://registry.npmmirror.com/html-encoding-sniffer/-/html-encoding-sniffer-3.0.0.tgz"
   dependencies:
     whatwg-encoding "^2.0.0"
-
-htmlparser2@^4.0.0:
-  version "4.1.0"
-  resolved "https://registry.npmmirror.com/htmlparser2/-/htmlparser2-4.1.0.tgz"
-  dependencies:
-    domelementtype "^2.0.1"
-    domhandler "^3.0.0"
-    domutils "^2.0.0"
-    entities "^2.0.0"
 
 htmlparser2@^7.0.0:
   version "7.2.0"
@@ -1254,10 +1226,6 @@ strip-indent@^3.0.0:
   resolved "https://registry.npmmirror.com/strip-indent/-/strip-indent-3.0.0.tgz"
   dependencies:
     min-indent "^1.0.0"
-
-striptags@^3.1.1:
-  version "3.2.0"
-  resolved "https://registry.npmmirror.com/striptags/-/striptags-3.2.0.tgz"
 
 stylus@^0.57.0:
   version "0.57.0"
