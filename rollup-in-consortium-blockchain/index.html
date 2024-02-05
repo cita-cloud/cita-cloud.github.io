@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"cita-cloud.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="区块链扩容方案区块链自诞生一来，一直受性能问题困扰。 因为区块链跟传统的分布式系统（比如分布式数据库）有一个很大的不同，就是每个节点都是副本，要同步所有的数据并执行同样的处理，而传统的分布式数据库一般是三副本。这就导致分布式数据库增加节点可以提升性能，而区块链增加节点，不但不能提升性能，反而会降低性能（通信量变大）。 横向扩展不行，那还有纵向扩展，即提升节点的硬件配置。 可惜这一条路也被堵死了，因">
+<meta property="og:type" content="article">
+<meta property="og:title" content="技术沙龙第十一期-联盟链中的Rollup方案">
+<meta property="og:url" content="https://cita-cloud.github.io/rollup-in-consortium-blockchain/index.html">
+<meta property="og:site_name" content="CITAHub技术团队">
+<meta property="og:description" content="区块链扩容方案区块链自诞生一来，一直受性能问题困扰。 因为区块链跟传统的分布式系统（比如分布式数据库）有一个很大的不同，就是每个节点都是副本，要同步所有的数据并执行同样的处理，而传统的分布式数据库一般是三副本。这就导致分布式数据库增加节点可以提升性能，而区块链增加节点，不但不能提升性能，反而会降低性能（通信量变大）。 横向扩展不行，那还有纵向扩展，即提升节点的硬件配置。 可惜这一条路也被堵死了，因">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cita-cloud.github.io/rollup-in-consortium-blockchain/rollup.png">
+<meta property="article:published_time" content="2022-03-03T12:08:44.000Z">
+<meta property="article:modified_time" content="2022-03-03T12:08:44.000Z">
+<meta property="article:author" content="CITAHub">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cita-cloud.github.io/rollup-in-consortium-blockchain/rollup.png">
+
+
+<link rel="canonical" href="https://cita-cloud.github.io/rollup-in-consortium-blockchain/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://cita-cloud.github.io/rollup-in-consortium-blockchain/","path":"rollup-in-consortium-blockchain/","title":"技术沙龙第十一期-联盟链中的Rollup方案"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>技术沙龙第十一期-联盟链中的Rollup方案 | CITAHub技术团队</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">CITAHub技术团队</p>
+      <i class="logo-line"></i>
+    </a>
+      <img class="custom-logo-image" src="/uploads/citahub.jpg" alt="CITAHub技术团队">
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8C%BA%E5%9D%97%E9%93%BE%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88"><span class="nav-number">1.</span> <span class="nav-text">区块链扩容方案</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Rollup"><span class="nav-number">2.</span> <span class="nav-text">Rollup</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%81%94%E7%9B%9F%E9%93%BE%E4%B8%ADRollup"><span class="nav-number">3.</span> <span class="nav-text">联盟链中Rollup</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8C%BA%E5%9D%97%E9%93%BE%E7%9A%84%E6%8A%BD%E8%B1%A1"><span class="nav-number">4.</span> <span class="nav-text">区块链的抽象</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CITAHub</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/citahub" title="CITAHub仓库 → https:&#x2F;&#x2F;github.com&#x2F;citahub" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITAHub仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/cita-cloud" title="CITA-Cloud仓库 → https:&#x2F;&#x2F;github.com&#x2F;cita-cloud" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITA-Cloud仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:contact@rivtower.com" title="E-Mail → mailto:contact@rivtower.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://talk.citahub.com/" title="论坛 → https:&#x2F;&#x2F;talk.citahub.com" rel="noopener me" target="_blank"><i class="fab fa-stack-overflow fa-fw"></i>论坛</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://docs.citahub.com/zh-CN/welcome" title="CITAHub文档 → https:&#x2F;&#x2F;docs.citahub.com&#x2F;zh-CN&#x2F;welcome" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITAHub文档</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://cita-cloud-docs.readthedocs.io/zh_CN/latest/" title="CITA-Cloud文档 → https:&#x2F;&#x2F;cita-cloud-docs.readthedocs.io&#x2F;zh_CN&#x2F;latest&#x2F;" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITA-Cloud文档</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cita-cloud.github.io/rollup-in-consortium-blockchain/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CITAHub">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="技术沙龙第十一期-联盟链中的Rollup方案 | CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          技术沙龙第十一期-联盟链中的Rollup方案
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2022-03-03 20:08:44" itemprop="dateCreated datePublished" datetime="2022-03-03T20:08:44+08:00">2022-03-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/" itemprop="url" rel="index"><span itemprop="name">区块链</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>2k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>7 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h3 id="区块链扩容方案"><a href="#区块链扩容方案" class="headerlink" title="区块链扩容方案"></a>区块链扩容方案</h3><p>区块链自诞生一来，一直受性能问题困扰。</p>
+<p>因为区块链跟传统的分布式系统（比如分布式数据库）有一个很大的不同，就是每个节点都是副本，要同步所有的数据并执行同样的处理，而传统的分布式数据库一般是三副本。这就导致分布式数据库增加节点可以提升性能，而区块链增加节点，不但不能提升性能，反而会降低性能（通信量变大）。</p>
+<p>横向扩展不行，那还有纵向扩展，即提升节点的硬件配置。</p>
+<p>可惜这一条路也被堵死了，因为在区块链里，去中心化是绝对的政治正确，提升节点的硬件要求，会把一部分人挡在外面，导致链更中心化了。</p>
+<p>大区块方案其实就是间接的纵向扩展。因为区块扩大了，能打包的交易多了，但是出块间隔不变。加（工作）量不加价，对打工人的要求当然就更高了。</p>
+<p>所谓开源节流，既然开源这边横竖都不行，自然只能节流了。怎么节流？把一部分工作推出去，担子轻省了，自然跑得就快了。</p>
+<p>状态通道就是最早的这一类方案，类似的还有闪电网络，雷电网络等等，原理都差不多。</p>
+<p>因为早期区块链（就是比特币）只有转账操作，这些方案也基本上只支持转账操作，所以也叫支付通道。</p>
+<p>打个比方，比如5个同事去饭店聚餐，总共消费200元，AA一下每个人40。如果每个人都直接给老板支付40，加上找零什么的，老板一下就忙不过来了。有没有更省事的办法呢？老板说你们5个人先把200凑出来，没有零钱，相互找零都内部搞定，完了再一起给我。</p>
+<p>这里老板就相当于区块链，5个人内部相互支付就是支付通道。</p>
+<p>状态通道的缺点：</p>
+<ol>
+<li>人不好凑。几个人是同事还好，几个陌生人就不能这么搞了。</li>
+<li>相比而言资金还是有风险的。你给了同事50，同事要找你10，但是现在没零钱，说回头给你，结果回头就忘记了。但是老板是不敢这么做的，吃饭多收钱店都开不下去了。</li>
+</ol>
+<p>接下来是侧链方案，有点类似于影分身，一个人工作压力山大，多召唤几个分身一起分担。这个方案跟状态通道不一样，这个是直接把整个链都搞了多套，说白了就是多链方案。</p>
+<p>这类方案的问题是，工作倒是分担了，扯皮也跟着多了起来。山头林立，到底听谁的？</p>
+<p>分片，<code>Plasma</code>都属于这一类的变种，为了弥补其缺点各种打补丁，搞得方案巨复杂，这里就不详述了。</p>
+<p>终于，本文的主角<code>Rollup</code>出现了。</p>
+<p>跟前面的横向扩展，纵向扩展类似。多链可以认为是横向扩展，而<code>Rollup</code>则是纵向扩展。所以<code>Rollup</code>被称为<code>layer 2</code>（两层）方案。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">其实一般侧链，Plasma等也会被划入layer 2方案。但是我觉得它们的区别还是挺明显的，所以这里我并没有按照惯用的说法，请大家注意。</span><br></pre></td></tr></table></figure>
+
+<p>前面大家折腾了很久的多链方案之后，终于发现这些漏洞是按下葫芦浮起瓢，怎么都堵不住。专业的说法是，数据可用性和计算正确性无法同时保证。</p>
+<p>因为<code>Plasma</code>想把数据和计算都平分到多条链里面，而<code>Rollup</code>则是分工一下，<code>layer 1</code>负责数据可用性，<code>layer 2</code>只负责计算。</p>
+<h3 id="Rollup"><a href="#Rollup" class="headerlink" title="Rollup"></a>Rollup</h3><p>该方案对链的性能提升来自几个方面：</p>
+<ol>
+<li>聚合器收集用户交易，然后批量打包发送到<code>layer 1</code>上，可以节省<code>gas</code>。在同样的<code>gas limit</code>下，区块可以打包更多的交易。<ul>
+<li>对交易进行压缩。去除非必要字段，甚至直接数据压缩。</li>
+<li>以<code>calldata</code>的方式将交易发送到链上，这种存储形式的<code>gas</code>消耗更低。</li>
+</ul>
+</li>
+<li>链外计算，<code>layer 1</code>的负担减轻了。</li>
+<li><code>Arbitrum</code>项目还提出了序列器方案，由中心化系统对交易进行排序，进一步提升系统性能。</li>
+</ol>
+<p>当然这里面也是有安全问题的，因此还设置了复杂的挑战机制，通过举报有奖的方式来解决可能出现的欺诈问题。</p>
+<h3 id="联盟链中Rollup"><a href="#联盟链中Rollup" class="headerlink" title="联盟链中Rollup"></a>联盟链中Rollup</h3><p>然而，对于联盟链来说，<code>Rollup</code>提升性能方面的作用并不重要。</p>
+<p>一方面，联盟链的性能压力不大；另外一方面，联盟链里没有<code>gas</code>，方案里那些节省<code>gas</code>的奇技淫巧根本没用。</p>
+<p>那么我们为什么要花这么多精力去研究它呢？</p>
+<p>因为<code>Rollup</code>方案有一个被忽视的，其实非常重要的作用，就是它提供了区块链进一步解耦的思路：</p>
+<ol>
+<li>用户直接与聚合器进行交互，而不是链。用户接口和相应的数据结构（交易结构）与链解耦。</li>
+<li>合约引擎与链解耦。<ul>
+<li><code>Layer 1</code>链只提供存证功能，保证原始交易的数据有效性，和对计算结果的存证。</li>
+<li>合约部分将跟传统应用开发类似，开发者可以用更灵活的方式开发智能合约。</li>
+</ul>
+</li>
+<li>序列器提供了去中心化与中心化结合的思路。用户可以根据信任程度走不同的路径，甚至在信任的前提下，数据有效性可以由单一中心化系统保证，更好的与传统系统结合。</li>
+</ol>
+<p>然后我们就可以让整个联盟链系统更加贴近应用场景：</p>
+<ol>
+<li>用户接口可以更贴近应用，设计为更适合应用的方式。比如：<ul>
+<li>数据结构可以针对特定应用优化。</li>
+<li>验证方式不一定使用数字签名，可以用更传统的用户名&#x2F;密码等方式。</li>
+</ul>
+</li>
+<li>智能合约开发形式更接近传统应用。<ul>
+<li>使用通用编程语言。</li>
+<li>智能合约是一个单独的系统，设计更加灵活。</li>
+</ul>
+</li>
+<li>实现去中心化和中心化相结合的方式，更加贴近现实场景。<ul>
+<li>用户信任中心化系统时，可以走中心化系统，作为<code>fast path</code>。</li>
+<li>用户不信任中心化系统的时候，走去中心化系统作为<code>slow path</code>。</li>
+</ul>
+</li>
+</ol>
+<p>当然这里面还有很多技术挑战，比如：</p>
+<ol>
+<li>用通用语言编写智能合约，怎么保证其执行的确定性？</li>
+<li><code>layer 2</code>要证明计算的正确性，就要给出相应的密码学证据，是否有比以太坊基于默克尔树的方案更轻量的方案？</li>
+<li>用户在不同的路径间切换时，如何处理回退等情况，如何让用户体验更好，甚至无感？</li>
+</ol>
+<p>对具体方案有兴趣的小伙伴欢迎关注<a target="_blank" rel="noopener" href="https://github.com/cita-cloud">CITA-Cloud</a>中相应的<a target="_blank" rel="noopener" href="https://github.com/cita-cloud/rfcs/pull/10/files">RFC</a>，也欢迎大家一起来探讨相关的话题。</p>
+<h3 id="区块链的抽象"><a href="#区块链的抽象" class="headerlink" title="区块链的抽象"></a>区块链的抽象</h3><p>引入<code>Rollup</code>的思路之后，联盟链从抽象角度会变得更像可信计算和存证的结合。</p>
+<p><img src="/rollup-in-consortium-blockchain/rollup.png"></p>
+<p>这里的<code>caller</code>和<code>add_server</code>就是很传统的可信计算的关系。</p>
+<p>可信计算已经发展出了非常多的先进技术，比如零知识证明之类。但是欺诈者足够无耻的话，你总是拿他没办法，而区块链可以以仲裁者的角色，填补上这个漏洞。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/cloud-init-quickstart/" rel="prev" title="技术沙龙第十期-cloud-init快速开始">
+                  <i class="fa fa-angle-left"></i> 技术沙龙第十期-cloud-init快速开始
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/tech-salon-12-oauth2/" rel="next" title="技术沙龙第十二期 - OAuth2">
+                  技术沙龙第十二期 - OAuth2 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CITAHub</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">43k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">2:38</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://unpkg.com/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/pangu@4.0.7/dist/browser/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  <script src="https://unpkg.com/hexo-generator-searchdb@1.4.1/dist/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

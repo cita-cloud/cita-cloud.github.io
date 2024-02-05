@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"cita-cloud.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="大勇： 今天分享与云端的流量入口、流量代理有关。 大勇： 也看过一些云平台的部署架构、拓扑结构图之类的，发现很多，对流量代理、入口的界定不是很清晰。 有的把ingress 当成流量代理、有的认为是K8S service、有的认为是kube-proxy 等。 我这里再梳理下，其实以上都不是流量代理。 大勇： ingress 是K8S 的一种原生资源(有别于CRUD的自定义资源)，是描述具体的路由规则">
+<meta property="og:type" content="article">
+<meta property="og:title" content="技术沙龙第六期-流量代理">
+<meta property="og:url" content="https://cita-cloud.github.io/tech-salon-6-flow/index.html">
+<meta property="og:site_name" content="CITAHub技术团队">
+<meta property="og:description" content="大勇： 今天分享与云端的流量入口、流量代理有关。 大勇： 也看过一些云平台的部署架构、拓扑结构图之类的，发现很多，对流量代理、入口的界定不是很清晰。 有的把ingress 当成流量代理、有的认为是K8S service、有的认为是kube-proxy 等。 我这里再梳理下，其实以上都不是流量代理。 大勇： ingress 是K8S 的一种原生资源(有别于CRUD的自定义资源)，是描述具体的路由规则">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-12-03T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-12-03T16:00:00.000Z">
+<meta property="article:author" content="CITAHub">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://cita-cloud.github.io/tech-salon-6-flow/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://cita-cloud.github.io/tech-salon-6-flow/","path":"tech-salon-6-flow/","title":"技术沙龙第六期-流量代理"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>技术沙龙第六期-流量代理 | CITAHub技术团队</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">CITAHub技术团队</p>
+      <i class="logo-line"></i>
+    </a>
+      <img class="custom-logo-image" src="/uploads/citahub.jpg" alt="CITAHub技术团队">
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-overview-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CITAHub</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/citahub" title="CITAHub仓库 → https:&#x2F;&#x2F;github.com&#x2F;citahub" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITAHub仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/cita-cloud" title="CITA-Cloud仓库 → https:&#x2F;&#x2F;github.com&#x2F;cita-cloud" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITA-Cloud仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:contact@rivtower.com" title="E-Mail → mailto:contact@rivtower.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://talk.citahub.com/" title="论坛 → https:&#x2F;&#x2F;talk.citahub.com" rel="noopener me" target="_blank"><i class="fab fa-stack-overflow fa-fw"></i>论坛</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://docs.citahub.com/zh-CN/welcome" title="CITAHub文档 → https:&#x2F;&#x2F;docs.citahub.com&#x2F;zh-CN&#x2F;welcome" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITAHub文档</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://cita-cloud-docs.readthedocs.io/zh_CN/latest/" title="CITA-Cloud文档 → https:&#x2F;&#x2F;cita-cloud-docs.readthedocs.io&#x2F;zh_CN&#x2F;latest&#x2F;" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITA-Cloud文档</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cita-cloud.github.io/tech-salon-6-flow/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CITAHub">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="技术沙龙第六期-流量代理 | CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          技术沙龙第六期-流量代理
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-12-04 00:00:00" itemprop="dateCreated datePublished" datetime="2021-12-04T00:00:00+08:00">2021-12-04</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E4%BA%91%E8%AE%A1%E7%AE%97/" itemprop="url" rel="index"><span itemprop="name">云计算</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>2k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>7 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>大勇：</p>
+<p>今天分享与云端的流量入口、流量代理有关。</p>
+<p>大勇：</p>
+<p>也看过一些云平台的部署架构、拓扑结构图之类的，发现很多，对流量代理、入口的界定不是很清晰。 有的把ingress 当成流量代理、有的认为是K8S service、有的认为是kube-proxy 等。 我这里再梳理下，其实以上都不是流量代理。</p>
+<p>大勇：</p>
+<p>ingress 是K8S 的一种原生资源(有别于CRUD的自定义资源)，是描述具体的路由规则的。</p>
+<p>大勇：</p>
+<p>Ingress Controller 是才是流量的入口，是名副其实的流量代理，也可以称为边缘服务(集群内与集群外流量网关)，纵向流量(有叫南北流量的说法)， 一般是Nginx 、traefik和 Haproxy（较少使用）。</p>
+<p>大勇：</p>
+<p>Ingerss 描述了一个或者多个 域名的路由规则，以 ingress 资源的形式存在。<br>简单说： Ingress 描述路由规则。</p>
+<p>大勇：</p>
+<p>可以认为ingress 其实就是一个配置文件，而已，在你真正访问pod应用的时候 是没起任何作用的</p>
+<p>大勇：</p>
+<p>但是这个配置文件又不能删除， 这是因为Ingress Controller 实时实现规则。Ingress Controller 会监听 api server上的 &#x2F;ingresses 资源 并实时生效。</p>
+<p>大勇：</p>
+<p>是Ingress Controller 是实时监听 api server 上ingresses ，如果没有了，会马上删除 自身的 反向代理配置 ，才让ingress 好像干掉了 就访问不了了。</p>
+<p>大勇：</p>
+<p>Ingress Controller 流量代理 自身的部署方式 以及服务类型 会决定了，整个K8S 的流量瓶颈，是每个节点的流量决定，还是整个集群所有的节点一起决定的。 这个先放后面，接下来讲，service与 kube-proxy 是否是流量代理的分析</p>
+<p>大勇：</p>
+<p>ingerss 与service的关系：</p>
+<p>大勇：</p>
+<p>ingress 在前，service在后， 前者不是流量代理， 顺利成章的会认为是后者，其实也不然。</p>
+<p>大勇：</p>
+<p>看K8S 对service的概念介绍：Service 概念<br>Kubernetes Service定义了这样一种抽象： Service是一种可以访问 Pod逻辑分组的策略， Service通常是通过 Label Selector访问 Pod组。<br>Service能够提供负载均衡的能力。</p>
+<p>大勇：</p>
+<p>service 有以下种类型：</p>
+<p>大勇：</p>
+<p>ClusterIp、NodePort、LoadBalancer(升级版nodeport)</p>
+<p>大勇：</p>
+<p>Service 也只仅仅是一种策略， 也不是应用每次被访问时，需要经过的组件，也不负载流量的转发。</p>
+<p>大勇：</p>
+<p>这里可能会有疑问，不负载流量转发，怎么又能实现这么多类型的服务，又怎么实现负载均衡的。</p>
+<p>大勇：</p>
+<p>这时候就该神奇的kube-proxy K8S组件闪亮登场了</p>
+<p>大勇：</p>
+<p>kube-proxy是Kubernetes的核心组件，部署在每个Node节点上，它是实现Kubernetes Service的通信与负载均衡机制的重要组件; kube-proxy负责为Pod创建代理服务，从apiserver获取所有server信息，并根据server信息创建代理服务，实现server到Pod的请求路由和转发，从而实现K8s层级的虚拟转发网络。</p>
+<p>在k8s中，提供相同服务的一组pod可以抽象成一个service，通过service提供的统一入口对外提供服务，每个service都有一个虚拟IP地址（VIP）和端口号供客户端访问。kube-proxy存在于各个node节点上，主要用于Service功能的实现，具体来说，就是实现集群内的客户端pod访问service，或者是集群外的主机通过NodePort等方式访问service。在当前版本的k8s中，kube-proxy默认使用的是iptables模式，通过各个node节点上的iptables规则来实现service的负载均衡，但是随着service数量的增大，iptables模式由于线性查找匹配、全量更新等特点，其性能会显著下降。</p>
+<p>大勇：</p>
+<p>kube-proxy当前实现了三种代理模式：userspace, iptables, ipvs。其中userspace mode是v1.0及之前版本的默认模式，从v1.1版本中开始增加了iptables mode，在v1.2版本中正式替代userspace模式成为默认模式。也就是说kubernetes在v1.2版本之前是默认模式, v1.2版本之后默认模式是iptables。</p>
+<p>大勇：</p>
+<p>linux 分User space(用户空间)和 Kernel space(内核空间)。 在K8S 1.0 版本之前，kube-proxy 确实是流量代理</p>
+<p>大勇：</p>
+<p>每次的访问都是 从User space 到Kernel space 再到 User space 里的 kube-proxy</p>
+<p>大勇：</p>
+<p>显然这种方式会 因为K8S 底层组件的流量瓶颈，会影响整个上层应用生态</p>
+<p>大勇：</p>
+<p>使用userspace 的资源，比使用kernelspace的资源要昂贵的多， 这里引申一下， 能用TCP的场景，要比用HTTP的 节省资源。其他先不分析， 就工作层级来讲 TCP是工作在 kernelspace ，http是userspace 是应用层协议。</p>
+<p>大勇：</p>
+<p>第二个阶段，iptables mode, 该模式完全利用内核iptables来实现service的代理和LB, 这是K8s在v1.2及之后版本默认模式</p>
+<p>大勇：</p>
+<p>kube-proxy 在第二阶段 使用iptables mode 时，已经部署流量代理了，这些都交给 节点机器的iptables 路由表 来流量转换了， 而kube-proxy 只需要从api server 拿到service的策略配置，来实时维护好iptables 即可</p>
+<p>大勇：</p>
+<p>第二阶段，随着服务越来越多，维护Node上的iptables rules将会非常庞大，性能还会再打折扣</p>
+<p>大勇：</p>
+<p> 故迎来了 第三阶段ipvs mode.   当下 一般的云都是这种模式</p>
+<p>大勇：</p>
+<p>在kubernetes 1.8以上的版本中，对于kube-proxy组件增加了除iptables模式和用户模式之外还支持ipvs模式。kube-proxy ipvs 是基于 NAT 实现的，通过ipvs的NAT模式，对访问k8s service的请求进行虚IP到POD IP的转发。</p>
+<p>大勇：</p>
+<p>kubedns&#x2F;coredns 这个就是K8S的 dns服务器而已，不是流量代理，只提供了一个服务名、主机名等的DNS解析</p>
+<p>大勇：</p>
+<p>kube-proxy 经过以上阶段，也不是流量代理了，不会是应用访问的流量影响者</p>
+<p>大勇：</p>
+<p>综合以上分析，现在来看，流量控制代理瓶颈，不会出现在 K8S的service</p>
+<p>大勇：</p>
+<p>kube-proxy</p>
+<p>大勇：</p>
+<p>只有可能出现在 ingress-controller</p>
+<p>大勇：</p>
+<p>实际k8s 官方也提供了 ingress-controller的实现，只是也不太好用，</p>
+<p>大勇：</p>
+<p>现在基本都用 Nginx  、traefik、Haproxy</p>
+<p>大勇：</p>
+<p>来说下Nginx 吧， 早期版本部署是通过 DaemonSet 的方式</p>
+<p>大勇：</p>
+<p>这种方式就是每个节点启用一个 nginx代理</p>
+<p>大勇：</p>
+<p>但是会把当前节点机器的 80、443 端口占用掉</p>
+<p>大勇：</p>
+<p>因为Nginx 自身的 service 的暴露类型是 采用的 hostport 方式 类似与nodeprot 但是没负载均衡，就是只能用POD所在的节点机器IP 访问到</p>
+<p>大勇：</p>
+<p>好在是 DaemonSet方式，反正每个机器都有，用每个节点的IP 都能访问到nginx服务，然后反向代理到 应用的服务</p>
+<p>大勇：</p>
+<p>后面流量网关也进行了部署升级，先看下华为云的把：</p>
+<p>大勇：</p>
+<p>可以看到 不用DaemonSet，不用每台都启了， 启动几个pod就行， 自身的 service 也通过LoadBalancer 类型暴露了</p>
+<p>大勇：</p>
+<p>LoadBalancer 类型是需要负载均衡器来支持了，这种类型，如果采用类似BGP模式，理论上相当于 K8S集群每个节点的都可以成为流量入口。 相当于ingress-controller 作为流量入口，流量网关，它理论上可以做到，K8S的 所有节点都能充当入口。 以达到流量的最大化。</p>
+<p>大勇：</p>
+<p>今天的分析就到这了，梳理了一个论点，即：ingress-controller 才是流量代理，ingress、service、kube-proxy都不是，理论上可以做到流量的最大化，K8S 从机制上来看，没有流量瓶颈的桎梏。 要有也是 节点机器、其它方面的。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/tech-salon-5/" rel="prev" title="技术沙龙第五期">
+                  <i class="fa fa-angle-left"></i> 技术沙龙第五期
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/tech-salon-6-bls/" rel="next" title="技术沙龙第六期-BLS">
+                  技术沙龙第六期-BLS <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CITAHub</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">43k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">2:38</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://unpkg.com/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/pangu@4.0.7/dist/browser/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  <script src="https://unpkg.com/hexo-generator-searchdb@1.4.1/dist/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

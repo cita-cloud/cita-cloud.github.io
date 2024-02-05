@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"cita-cloud.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="问题描述我们使用 Certbot 工具向 Let’s Encrypt 免费申请并自动续期证书。 在 Kubernetes Cluster 中，我们使用 cert-manager 组件来实现。 该笔记将记录：在 Kubernetes Cluster 1.22 中，部署 cert-manager 1.7 组件，以及相关问题解决办法。 解决方案环境信息集群版本：Kubernetes Cluster v1">
+<meta property="og:type" content="article">
+<meta property="og:title" content="在 Kubernetes 中，免费 HTTPS 证书（cert-manager）">
+<meta property="og:url" content="https://cita-cloud.github.io/cert-manager/index.html">
+<meta property="og:site_name" content="CITAHub技术团队">
+<meta property="og:description" content="问题描述我们使用 Certbot 工具向 Let’s Encrypt 免费申请并自动续期证书。 在 Kubernetes Cluster 中，我们使用 cert-manager 组件来实现。 该笔记将记录：在 Kubernetes Cluster 1.22 中，部署 cert-manager 1.7 组件，以及相关问题解决办法。 解决方案环境信息集群版本：Kubernetes Cluster v1">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-04-01T11:28:06.000Z">
+<meta property="article:modified_time" content="2022-04-01T11:28:06.000Z">
+<meta property="article:author" content="CITAHub">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://cita-cloud.github.io/cert-manager/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://cita-cloud.github.io/cert-manager/","path":"cert-manager/","title":"在 Kubernetes 中，免费 HTTPS 证书（cert-manager）"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>在 Kubernetes 中，免费 HTTPS 证书（cert-manager） | CITAHub技术团队</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">CITAHub技术团队</p>
+      <i class="logo-line"></i>
+    </a>
+      <img class="custom-logo-image" src="/uploads/citahub.jpg" alt="CITAHub技术团队">
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E6%8F%8F%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">问题描述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">2.</span> <span class="nav-text">解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E4%BF%A1%E6%81%AF"><span class="nav-number">2.1.</span> <span class="nav-text">环境信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%A5%E5%85%85%E8%AF%B4%E6%98%8E"><span class="nav-number">2.2.</span> <span class="nav-text">补充说明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C"><span class="nav-number">2.3.</span> <span class="nav-text">准备工作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AD%A5%E3%80%81%E9%83%A8%E7%BD%B2%E7%BB%84%E4%BB%B6"><span class="nav-number">2.4.</span> <span class="nav-text">第一步、部署组件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E6%AD%A5%E3%80%81%E9%AA%8C%E8%AF%81%E5%AE%89%E8%A3%85"><span class="nav-number">2.5.</span> <span class="nav-text">第二步、验证安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E6%AD%A5%E3%80%81%E7%AD%BE%E5%8F%91%E6%B5%8B%E8%AF%95"><span class="nav-number">2.6.</span> <span class="nav-text">第三步、签发测试</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%9A%E8%BF%87-cert-manager-%E7%94%B3%E8%AF%B7-Let%E2%80%99s-Encrypt-%E8%AF%81%E4%B9%A6"><span class="nav-number">3.</span> <span class="nav-text">通过 cert-manager 申请 Let’s Encrypt 证书</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E6%8F%8F%E8%BF%B0-1"><span class="nav-number">3.1.</span> <span class="nav-text">问题描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88-1"><span class="nav-number">3.2.</span> <span class="nav-text">解决方案</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8-Ingress-%E4%B8%AD%EF%BC%8C%E4%BD%BF%E7%94%A8-HTTPS-%E8%AF%81%E4%B9%A6%EF%BC%9A"><span class="nav-number"></span> <span class="nav-text">在 Ingress 中，使用 HTTPS 证书：</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">1.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CITAHub</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/citahub" title="CITAHub仓库 → https:&#x2F;&#x2F;github.com&#x2F;citahub" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITAHub仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/cita-cloud" title="CITA-Cloud仓库 → https:&#x2F;&#x2F;github.com&#x2F;cita-cloud" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITA-Cloud仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:contact@rivtower.com" title="E-Mail → mailto:contact@rivtower.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://talk.citahub.com/" title="论坛 → https:&#x2F;&#x2F;talk.citahub.com" rel="noopener me" target="_blank"><i class="fab fa-stack-overflow fa-fw"></i>论坛</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://docs.citahub.com/zh-CN/welcome" title="CITAHub文档 → https:&#x2F;&#x2F;docs.citahub.com&#x2F;zh-CN&#x2F;welcome" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITAHub文档</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://cita-cloud-docs.readthedocs.io/zh_CN/latest/" title="CITA-Cloud文档 → https:&#x2F;&#x2F;cita-cloud-docs.readthedocs.io&#x2F;zh_CN&#x2F;latest&#x2F;" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITA-Cloud文档</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cita-cloud.github.io/cert-manager/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CITAHub">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="在 Kubernetes 中，免费 HTTPS 证书（cert-manager） | CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          在 Kubernetes 中，免费 HTTPS 证书（cert-manager）
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2022-04-01 19:28:06" itemprop="dateCreated datePublished" datetime="2022-04-01T19:28:06+08:00">2022-04-01</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E4%BA%91%E8%AE%A1%E7%AE%97/" itemprop="url" rel="index"><span itemprop="name">云计算</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>1.1k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>4 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>我们使用 Certbot 工具向 Let’s Encrypt 免费申请并自动续期证书。</p>
+<p>在 Kubernetes Cluster 中，我们使用 cert-manager 组件来实现。</p>
+<p>该笔记将记录：在 Kubernetes Cluster 1.22 中，部署 cert-manager 1.7 组件，以及相关问题解决办法。</p>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><h3 id="环境信息"><a href="#环境信息" class="headerlink" title="环境信息"></a>环境信息</h3><p>集群版本：Kubernetes Cluster v1.22.3-aliyun.1<br>组件版本：cert-manager v1.7（Supported Kubernetes versions: 1.18-1.23）</p>
+<h3 id="补充说明"><a href="#补充说明" class="headerlink" title="补充说明"></a>补充说明</h3><p>1）作为系列部署资源，cert-manager 运行在 Kubernetes Cluster 中，并利用 CRD 来配置 CA 并请求证书；<br>2）部署方式：我们使用官方文档中推荐的 cmctl 命令，不再使用原始的 YAML 清单文件；<br>3）在部署 cert-manager 组件之后，需要创建代表 CA 的 Issuer 或 ClusterIssuer 资源；<br>4）在集群中部署多个 cert-manager 实例会出现意外行为（以前 v1.3 文档提到过，该版本不清楚是否存在该限制）；</p>
+<h3 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h3><p>安装命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">OS=$(go <span class="built_in">env</span> GOOS); ARCH=$(go <span class="built_in">env</span> GOARCH); curl -sSL -o cmctl.tar.gz https://github.com/cert-manager/cert-manager/releases/download/v1.7.2/cmctl-<span class="variable">$OS</span>-<span class="variable">$ARCH</span>.tar.gz</span><br><span class="line">tar xzf cmctl.tar.gz</span><br><span class="line">sudo <span class="built_in">mv</span> cmctl /usr/local/bin</span><br></pre></td></tr></table></figure>
+
+<h3 id="第一步、部署组件"><a href="#第一步、部署组件" class="headerlink" title="第一步、部署组件"></a>第一步、部署组件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cmctl x install --dry-run</span><br></pre></td></tr></table></figure>
+
+<h3 id="第二步、验证安装"><a href="#第二步、验证安装" class="headerlink" title="第二步、验证安装"></a>第二步、验证安装</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># cmctl check api --wait=2m</span></span><br><span class="line">The cert-manager API is ready</span><br><span class="line"></span><br><span class="line"><span class="comment"># kubectl get pods --namespace cert-manager</span></span><br><span class="line">NAME                                       READY   STATUS    RESTARTS   AGE</span><br><span class="line">cert-manager-75cf8df6b6-t2xns              1/1     Running   0          2m37s</span><br><span class="line">cert-manager-cainjector-857f5bd88c-5xzd7   1/1     Running   0          2m37s</span><br><span class="line">cert-manager-webhook-5cd99556d6-s6jf5      1/1     Running   0          2m37s</span><br></pre></td></tr></table></figure>
+
+<h3 id="第三步、签发测试"><a href="#第三步、签发测试" class="headerlink" title="第三步、签发测试"></a>第三步、签发测试</h3><p>验证方法：通过创建自签名证书，并检查证书是否能够自动签发（参考 <a target="_blank" rel="noopener" href="https://cert-manager.io/docs/installation/verify/">Verifying the Installation</a> 文档，以获取具体细节）</p>
+<p>我们有使用手工方式来验证（我们通过文档中提到的社区工具来验证，但是失败）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"># cat &gt; test-resources.yaml  &lt;&lt;EOF</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Namespace</span><br><span class="line">metadata:</span><br><span class="line">    name: cert-manager-test</span><br><span class="line">---</span><br><span class="line">apiVersion: cert-manager.io/v1</span><br><span class="line">kind: Issuer</span><br><span class="line">metadata:</span><br><span class="line">    name: test-selfsigned</span><br><span class="line">    namespace: cert-manager-test</span><br><span class="line">spec:</span><br><span class="line">    selfSigned: &#123;&#125;</span><br><span class="line">---</span><br><span class="line">apiVersion: cert-manager.io/v1</span><br><span class="line">kind: Certificate</span><br><span class="line">metadata:</span><br><span class="line">    name: selfsigned-cert</span><br><span class="line">    namespace: cert-manager-test</span><br><span class="line">spec:</span><br><span class="line">    dnsNames:</span><br><span class="line">    - example.com</span><br><span class="line">    secretName: selfsigned-cert-tls</span><br><span class="line">    issuerRef:</span><br><span class="line">    name: test-selfsigned</span><br><span class="line">EOF</span><br><span class="line"></span><br><span class="line"># kubectl apply -f test-resources.yaml</span><br><span class="line">...</span><br><span class="line">Status:</span><br><span class="line">    Conditions:</span><br><span class="line">    Last Transition Time:  2022-04-01T09:51:50Z</span><br><span class="line">    Message:               Certificate is up to date and has not expired</span><br><span class="line">    Observed Generation:   1</span><br><span class="line">    Reason:                Ready</span><br><span class="line">    Status:                True</span><br><span class="line">    Type:                  Ready</span><br><span class="line">    Not After:               2022-06-30T09:51:50Z</span><br><span class="line">    Not Before:              2022-04-01T09:51:50Z</span><br><span class="line">    Renewal Time:            2022-05-31T09:51:50Z</span><br><span class="line">    Revision:                1</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line"># kubectl delete -f test-resources.yaml</span><br><span class="line">namespace &quot;cert-manager-test&quot; deleted</span><br><span class="line">issuer.cert-manager.io &quot;test-selfsigned&quot; deleted</span><br><span class="line">certificate.cert-manager.io &quot;selfsigned-cert&quot; deleted</span><br></pre></td></tr></table></figure>
+
+<p>至此，已完成 cert-manager 部署，接下来便是使用 cert-manager 来申请 Let’s Encrypt 证书（结合我们的需求）。</p>
+<h2 id="通过-cert-manager-申请-Let’s-Encrypt-证书"><a href="#通过-cert-manager-申请-Let’s-Encrypt-证书" class="headerlink" title="通过 cert-manager 申请 Let’s Encrypt 证书"></a>通过 cert-manager 申请 Let’s Encrypt 证书</h2><h3 id="问题描述-1"><a href="#问题描述-1" class="headerlink" title="问题描述"></a>问题描述</h3><p>前面步骤演示如何部署 cert-manager 组件，并成功申请自签名证书，但这并非我们的实际应用场景。</p>
+<p>我们希望通过 cert-manager 组件，在集群内完成 Let’s Encrypt 证书申请和管理：<br>1）我们使用 阿里云 DNS，并通过 DNS01 完成域名所有权认证（部分集群在内网，无法使用 HTTP01 认证）；</p>
+<h3 id="解决方案-1"><a href="#解决方案-1" class="headerlink" title="解决方案"></a>解决方案</h3><p>需要阅读如下文档，以了解相关内容：<br><a target="_blank" rel="noopener" href="https://cert-manager.io/docs/configuration/acme/">cert-manager&#x2F;Configuration&#x2F;ACME</a><br>—- <a target="_blank" rel="noopener" href="https://cert-manager.io/docs/configuration/acme/dns01/">cert-manager&#x2F;Configuration&#x2F;ACME&#x2F;DNS01</a><br>——– <a target="_blank" rel="noopener" href="https://cert-manager.io/docs/configuration/acme/dns01/webhook/">cert-manager&#x2F;Configuration&#x2F;ACME&#x2F;DNS01&#x2F;Webhook</a></p>
+<p>我们这里使用 <a target="_blank" rel="noopener" href="https://github.com/DEVmachine-fr/cert-manager-alidns-webhook">DEVmachine-fr&#x2F;cert-manager-alidns-webhook</a> 来完成证书申请。</p>
+<p>安装 Webhook 部分：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># 网络原因，所以我们提前下载 helm chart 文件</span><br><span class="line">wget https://github.com/DEVmachine-fr/cert-manager-alidns-webhook/releases/download/alidns-webhook-0.6.1/alidns-webhook-0.6.1.tgz</span><br><span class="line"></span><br><span class="line"># 查看相关变量</span><br><span class="line">helm show values ./alidns-webhook-0.6.1.tgz</span><br><span class="line"></span><br><span class="line"># 大多数变量不需要修改，除了 groupName 参数</span><br><span class="line">helm -n cert-manager install alidns-webhook ./alidns-webhook-0.6.1.tgz \</span><br><span class="line">    --set groupName=your-company.example.com</span><br></pre></td></tr></table></figure>
+
+<p>创建 ClusterIssuer 资源：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"># 完成 DNS 质询需要访问阿里云接口来修改 DNS 记录，所以需要使用 KEY 与 TOKEN 来认证</span><br><span class="line">kubectl create secret generic                      \</span><br><span class="line">    alidns-secrets                                 \</span><br><span class="line">    --from-literal=&quot;access-token=your-token&quot;       \</span><br><span class="line">    --from-literal=&quot;secret-key=your-secret-key&quot;</span><br><span class="line"></span><br><span class="line"># 创建 ClusterIssuer 资源</span><br><span class="line">kubectl apply -f &lt;&lt;EOF</span><br><span class="line">apiVersion: cert-manager.io/v1</span><br><span class="line">kind: ClusterIssuer</span><br><span class="line">metadata:</span><br><span class="line">    name: letsencrypt</span><br><span class="line">spec:</span><br><span class="line">    acme:</span><br><span class="line">    # 修改，邮箱地址</span><br><span class="line">    email: contact@example.com</span><br><span class="line">    # 修改，生产地址：https://acme-v02.api.letsencrypt.org/directory</span><br><span class="line">    server: https://acme-staging-v02.api.letsencrypt.org/directory</span><br><span class="line">    privateKeySecretRef:</span><br><span class="line">        name: letsencrypt</span><br><span class="line">    solvers:</span><br><span class="line">    - dns01:</span><br><span class="line">        webhook:</span><br><span class="line">            # 修改，应用我们刚才创建的 Secret 资源</span><br><span class="line">            config:</span><br><span class="line">                accessTokenSecretRef:</span><br><span class="line">                key: access-token</span><br><span class="line">                name: alidns-secrets</span><br><span class="line">                regionId: cn-beijing</span><br><span class="line">                secretKeySecretRef:</span><br><span class="line">                key: secret-key</span><br><span class="line">                name: alidns-secrets</span><br><span class="line">            # 修改，需要填写在安装时指定的 groupName 信息</span><br><span class="line">            groupName: example.com</span><br><span class="line">            solverName: alidns-solver</span><br><span class="line">EOF</span><br></pre></td></tr></table></figure>
+
+<h1 id="在-Ingress-中，使用-HTTPS-证书："><a href="#在-Ingress-中，使用-HTTPS-证书：" class="headerlink" title="在 Ingress 中，使用 HTTPS 证书："></a>在 Ingress 中，使用 HTTPS 证书：</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"># https://cert-manager.io/docs/usage/ingress/</span><br><span class="line">kubectl apply -f &lt;&lt;EOF</span><br><span class="line">apiVersion: networking.k8s.io/v1</span><br><span class="line">kind: Ingress</span><br><span class="line">metadata:</span><br><span class="line">    annotations:</span><br><span class="line">    # 修改，暗示要使用的 issuer 资源，由管理员提供</span><br><span class="line">    cert-manager.io/cluster-issuer: nameOfClusterIssuer</span><br><span class="line">    name: myIngress</span><br><span class="line">    namespace: myIngress</span><br><span class="line">spec:</span><br><span class="line">    rules:</span><br><span class="line">    ...</span><br><span class="line">    tls:</span><br><span class="line">    - hosts:</span><br><span class="line">    # 修改，需要签发证书的域名</span><br><span class="line">    - example.com</span><br><span class="line">    # 修改，保存证书的 Secret 资源（cert-manger 负责创建）</span><br><span class="line">    secretName: myingress-cert</span><br><span class="line">EOF</span><br></pre></td></tr></table></figure>
+
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p><a target="_blank" rel="noopener" href="https://github.com/DEVmachine-fr/cert-manager-alidns-webhook">GitHub - DEVmachine-fr&#x2F;cert-manager-alidns-webhook</a><br><a target="_blank" rel="noopener" href="https://cert-manager.io/docs/installation/">Installation | cert-manager</a><br><a target="_blank" rel="noopener" href="https://cert-manager.io/docs/installation/cmctl/">cmctl | cert-manager</a><br><a target="_blank" rel="noopener" href="https://cert-manager.io/docs/usage/ingress/">Securing Ingress Resources | cert-manager</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/lvm-snapshot/" rel="prev" title="LVM 快照与恢复（备份与恢复的快速方法）">
+                  <i class="fa fa-angle-left"></i> LVM 快照与恢复（备份与恢复的快速方法）
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/edge-dc/" rel="next" title="可移动数据中心的构想与实现">
+                  可移动数据中心的构想与实现 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CITAHub</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">43k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">2:38</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://unpkg.com/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/pangu@4.0.7/dist/browser/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  <script src="https://unpkg.com/hexo-generator-searchdb@1.4.1/dist/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

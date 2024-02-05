@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"cita-cloud.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="对象存储与生态说起对象存储，不得不提Amazon的AWS S3(Simple Storage Service). 进入到21世纪，数据急剧增长，当时已经是电商巨头的Amazon需要一种海量的、可扩展的、支持非结构化数据且对开发友好的网络存储。2006年，S3云服务应运而生。 从那之后，各个云厂商也随之跟进，发布了自己的对象存储服务。 S3也不仅仅代表了一种云服务，也成为了对象存储业界的一种协议。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="在对象存储上运行CITA-Cloud">
+<meta property="og:url" content="https://cita-cloud.github.io/run-CITA-Cloud-on-object-storage/index.html">
+<meta property="og:site_name" content="CITAHub技术团队">
+<meta property="og:description" content="对象存储与生态说起对象存储，不得不提Amazon的AWS S3(Simple Storage Service). 进入到21世纪，数据急剧增长，当时已经是电商巨头的Amazon需要一种海量的、可扩展的、支持非结构化数据且对开发友好的网络存储。2006年，S3云服务应运而生。 从那之后，各个云厂商也随之跟进，发布了自己的对象存储服务。 S3也不仅仅代表了一种云服务，也成为了对象存储业界的一种协议。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cita-cloud.github.io/run-CITA-Cloud-on-object-storage/juice_sc.jpg">
+<meta property="og:image" content="https://cita-cloud.github.io/run-CITA-Cloud-on-object-storage/chain_pod.jpg">
+<meta property="og:image" content="https://cita-cloud.github.io/run-CITA-Cloud-on-object-storage/juicefs_pvc.jpg">
+<meta property="og:image" content="https://cita-cloud.github.io/run-CITA-Cloud-on-object-storage/minio.jpg">
+<meta property="article:published_time" content="2022-12-30T02:12:40.000Z">
+<meta property="article:modified_time" content="2022-12-30T02:12:40.000Z">
+<meta property="article:author" content="CITAHub">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cita-cloud.github.io/run-CITA-Cloud-on-object-storage/juice_sc.jpg">
+
+
+<link rel="canonical" href="https://cita-cloud.github.io/run-CITA-Cloud-on-object-storage/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://cita-cloud.github.io/run-CITA-Cloud-on-object-storage/","path":"run-CITA-Cloud-on-object-storage/","title":"在对象存储上运行CITA-Cloud"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>在对象存储上运行CITA-Cloud | CITAHub技术团队</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">CITAHub技术团队</p>
+      <i class="logo-line"></i>
+    </a>
+      <img class="custom-logo-image" src="/uploads/citahub.jpg" alt="CITAHub技术团队">
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E8%B1%A1%E5%AD%98%E5%82%A8%E4%B8%8E%E7%94%9F%E6%80%81"><span class="nav-number">1.</span> <span class="nav-text">对象存储与生态</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8JuiceFS%E8%AE%A9CITA-Cloud%E8%B7%91%E5%9C%A8%E5%AF%B9%E8%B1%A1%E5%AD%98%E5%82%A8%E4%B8%8A"><span class="nav-number">2.</span> <span class="nav-text">使用JuiceFS让CITA-Cloud跑在对象存储上</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#JuiceFS%E7%AE%80%E4%BB%8B%E4%B8%8E%E4%BD%BF%E7%94%A8"><span class="nav-number">2.1.</span> <span class="nav-text">JuiceFS简介与使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E4%B8%80%E6%9D%A1%E9%93%BE"><span class="nav-number">2.2.</span> <span class="nav-text">创建一条链</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">3.</span> <span class="nav-text">结语</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CITAHub</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/citahub" title="CITAHub仓库 → https:&#x2F;&#x2F;github.com&#x2F;citahub" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITAHub仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/cita-cloud" title="CITA-Cloud仓库 → https:&#x2F;&#x2F;github.com&#x2F;cita-cloud" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITA-Cloud仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:contact@rivtower.com" title="E-Mail → mailto:contact@rivtower.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://talk.citahub.com/" title="论坛 → https:&#x2F;&#x2F;talk.citahub.com" rel="noopener me" target="_blank"><i class="fab fa-stack-overflow fa-fw"></i>论坛</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://docs.citahub.com/zh-CN/welcome" title="CITAHub文档 → https:&#x2F;&#x2F;docs.citahub.com&#x2F;zh-CN&#x2F;welcome" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITAHub文档</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://cita-cloud-docs.readthedocs.io/zh_CN/latest/" title="CITA-Cloud文档 → https:&#x2F;&#x2F;cita-cloud-docs.readthedocs.io&#x2F;zh_CN&#x2F;latest&#x2F;" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITA-Cloud文档</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cita-cloud.github.io/run-CITA-Cloud-on-object-storage/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CITAHub">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="在对象存储上运行CITA-Cloud | CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          在对象存储上运行CITA-Cloud
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2022-12-30 10:12:40" itemprop="dateCreated datePublished" datetime="2022-12-30T10:12:40+08:00">2022-12-30</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Object-Storage/" itemprop="url" rel="index"><span itemprop="name">Object Storage</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>973</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>4 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="对象存储与生态"><a href="#对象存储与生态" class="headerlink" title="对象存储与生态"></a>对象存储与生态</h2><p>说起对象存储，不得不提Amazon的AWS S3(Simple Storage Service).</p>
+<p>进入到21世纪，数据急剧增长，当时已经是电商巨头的Amazon需要一种海量的、可扩展的、支持非结构化数据且对开发友好的网络存储。2006年，S3云服务应运而生。</p>
+<p>从那之后，各个云厂商也随之跟进，发布了自己的对象存储服务。</p>
+<p>S3也不仅仅代表了一种云服务，也成为了对象存储业界的一种协议。</p>
+<p>当前，很多云产品也都构建在S3之上，围绕对象存储基础设施，构建了庞大的生态。除了云商巨头，像Snowflake、Databricks这些明星data infra公司，更是离不开对象存储。</p>
+<p>国内近年来也有基于对象存储创业的公司，如兼容S3协议的JuiceFS，新式云仓Databend。</p>
+<p>从最几年的趋势来看，S3或者说对象存储俨然已经成为云上数据湖的基础。</p>
+<h2 id="使用JuiceFS让CITA-Cloud跑在对象存储上"><a href="#使用JuiceFS让CITA-Cloud跑在对象存储上" class="headerlink" title="使用JuiceFS让CITA-Cloud跑在对象存储上"></a>使用JuiceFS让CITA-Cloud跑在对象存储上</h2><p>对象存储普遍用于存放图片、音视频等静态文件。</p>
+<p>那么，既然作为存储的一种，CITA-Cloud能否直接运行在对象存储之上，而不占用本地空间呢？答案是肯定的，下面我们演示下怎么使用JuiceFS让CITA-Cloud跑在对象存储上。</p>
+<h3 id="JuiceFS简介与使用"><a href="#JuiceFS简介与使用" class="headerlink" title="JuiceFS简介与使用"></a>JuiceFS简介与使用</h3><p>JuiceFS是为云环境设计，兼容 POSIX、HDFS 和 S3 协议的分布式文件系统，具体介绍可以查看<a target="_blank" rel="noopener" href="https://juicefs.com/zh-cn/">官网</a></p>
+<p>在我看来，JuiceFS能让对象存储上的一个Bucket变成一块大的云盘，挂载在本地，让应用能像读取本地文件一样来操作对象存储上的对象。</p>
+<p>JuiceFS主要分为三部分：JuiceFS客户端、数据存储(公有云对象存储&#x2F;MinIO等)、元数据引擎(Redis&#x2F;SQLite等)。</p>
+<p>这里我们使用Redis作为元数据引擎。JuiceFS提供了针对Kubernetes环境的CSI，并提供了Helm的安装方式。</p>
+<p>JuiceFS安装时需要一个存储来保存对应文件系统的元数据，这里我们使用Redis；后端对象存储使用MinIO。</p>
+<p>Helm安装时的配置如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">storageClasses:</span><br><span class="line">- # -- `StorageClass` Name. It is important.</span><br><span class="line">  name: juicefs-sc</span><br><span class="line"><span class="meta prompt_">  # </span><span class="language-bash">-- Default is `<span class="literal">true</span>` will create a new `StorageClass`. It will create `Secret` and `StorageClass` used by CSI Driver.</span></span><br><span class="line">  enabled: true</span><br><span class="line"><span class="meta prompt_">  # </span><span class="language-bash">-- Either `Delete` or `Retain`. Refer to [this document](https://juicefs.com/docs/csi/guide/resource-optimization<span class="comment">#reclaim-policy) for more information.</span></span></span><br><span class="line">  reclaimPolicy: Delete</span><br><span class="line"><span class="meta prompt_">  # </span><span class="language-bash">-- Additional annotations <span class="keyword">for</span> this `StorageClass`, e.g. make it default.</span></span><br><span class="line"><span class="meta prompt_">  # </span><span class="language-bash">annotations:</span></span><br><span class="line"><span class="meta prompt_">  # </span><span class="language-bash">  storageclass.kubernetes.io/is-default-class: <span class="string">&quot;true&quot;</span></span></span><br><span class="line">  backend:</span><br><span class="line">    # -- The JuiceFS file system name</span><br><span class="line">    name: &quot;juicefs&quot;</span><br><span class="line">    # -- Connection URL for metadata engine (e.g. Redis), for community edition use only. Refer to [this document](https://juicefs.com/docs/community/databases_for_metadata) for more information.</span><br><span class="line">    metaurl: &quot;redis://:123456@redis-service.default:6379/1&quot;</span><br><span class="line">    # -- Object storage type, such as `s3`, `gs`, `oss`, for community edition use only. Refer to [this document](https://juicefs.com/docs/community/how_to_setup_object_storage) for the full supported list.</span><br><span class="line">    storage: &quot;minio&quot;</span><br><span class="line">    # -- Bucket URL, for community edition use only. Refer to [this document](https://juicefs.com/docs/community/how_to_setup_object_storage) to learn how to setup different object storage.</span><br><span class="line">    bucket: &quot;http://minio.zhujq:9000/juicefs&quot;</span><br><span class="line">    # -- JuiceFS managed token, for cloud service use only. Refer to [this document](https://juicefs.com/docs/cloud/acl) for more details.</span><br><span class="line">    token: &quot;&quot;</span><br><span class="line">    # -- Access key for object storage</span><br><span class="line">    accessKey: &quot;minio&quot;</span><br><span class="line">    # -- Secret key for object storage</span><br><span class="line">    secretKey: &quot;minio123&quot;</span><br></pre></td></tr></table></figure>
+
+<p>安装完成之后，可以看到多了一个名为<code>juicefs-sc</code>的StorageClass，在我的集群中如下所示：<br><img src="/run-CITA-Cloud-on-object-storage/juice_sc.jpg"></p>
+<h3 id="创建一条链"><a href="#创建一条链" class="headerlink" title="创建一条链"></a>创建一条链</h3><p>有了相应的StorageClass，我们可以用Cloud-Config来创建一条链，创建时指定StorageClass参数为juicefs-sc。</p>
+<p>可以看到一条4个节点的链已经运行起来了，并且能正常出块：<br><img src="/run-CITA-Cloud-on-object-storage/chain_pod.jpg"><br>同时创建了对应的PVC:<br><img src="/run-CITA-Cloud-on-object-storage/juicefs_pvc.jpg"></p>
+<p>在MinIO界面上，我们能看到对应的名为juice的bucket被创建，链节点的数据文件被分割为多个chunk进行存储：</p>
+<p><img src="/run-CITA-Cloud-on-object-storage/minio.jpg"></p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>对象存储作为一种相对廉价的海量存储，在强调降本增效的今天来看，越来越能体现它的重要性。</p>
+<p>当然，上面的例子只是一个实验，想要在生产环境使用，需要做完善的测试和评估，相信将来会有更多能与对象存储一起结合的场景。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/chat-from-controller-pattern/" rel="prev" title="聊一聊控制器模式">
+                  <i class="fa fa-angle-left"></i> 聊一聊控制器模式
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CITAHub</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">43k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">2:38</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://unpkg.com/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/pangu@4.0.7/dist/browser/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  <script src="https://unpkg.com/hexo-generator-searchdb@1.4.1/dist/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

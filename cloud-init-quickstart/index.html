@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"cita-cloud.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="问题描述以前，在操作系统的安装过程中：首先，我们需要准备操作系统镜像（通常是 ISO 镜像），并制作启动盘以从中启动。然后，在系统安装的过程中，用户与安装界面交互，填写必要的操作系统安装参数。最后，操作系统安装工具根据用户填写的参数完成系统安装与配置。 后来，出现无人值守安装：即预先将在以往安装过程中需要填写的操作参数写入配置文件。然后，向操作系统安装工具传递该配置文件的路径或读取方法。最后，操作">
+<meta property="og:type" content="article">
+<meta property="og:title" content="技术沙龙第十期-cloud-init快速开始">
+<meta property="og:url" content="https://cita-cloud.github.io/cloud-init-quickstart/index.html">
+<meta property="og:site_name" content="CITAHub技术团队">
+<meta property="og:description" content="问题描述以前，在操作系统的安装过程中：首先，我们需要准备操作系统镜像（通常是 ISO 镜像），并制作启动盘以从中启动。然后，在系统安装的过程中，用户与安装界面交互，填写必要的操作系统安装参数。最后，操作系统安装工具根据用户填写的参数完成系统安装与配置。 后来，出现无人值守安装：即预先将在以往安装过程中需要填写的操作参数写入配置文件。然后，向操作系统安装工具传递该配置文件的路径或读取方法。最后，操作">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-03-02T21:57:01.000Z">
+<meta property="article:modified_time" content="2022-03-02T21:57:01.000Z">
+<meta property="article:author" content="CITAHub">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://cita-cloud.github.io/cloud-init-quickstart/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://cita-cloud.github.io/cloud-init-quickstart/","path":"cloud-init-quickstart/","title":"技术沙龙第十期-cloud-init快速开始"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>技术沙龙第十期-cloud-init快速开始 | CITAHub技术团队</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">CITAHub技术团队</p>
+      <i class="logo-line"></i>
+    </a>
+      <img class="custom-logo-image" src="/uploads/citahub.jpg" alt="CITAHub技术团队">
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E6%8F%8F%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">问题描述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">2.</span> <span class="nav-text">解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%9F%E7%90%86%E7%AE%80%E8%BF%B0"><span class="nav-number">2.1.</span> <span class="nav-text">原理简述</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E5%BF%B5%E6%9C%AF%E8%AF%AD"><span class="nav-number">3.</span> <span class="nav-text">概念术语</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Cloud-Image"><span class="nav-number">3.1.</span> <span class="nav-text">Cloud Image</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Datasource"><span class="nav-number">3.2.</span> <span class="nav-text">Datasource</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cloud-init"><span class="nav-number">3.3.</span> <span class="nav-text">cloud-init</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E4%BD%BF%E7%94%A8"><span class="nav-number">4.</span> <span class="nav-text">安装使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AD%A5%E3%80%81%E5%88%9B%E5%BB%BA%E9%95%9C%E5%83%8F"><span class="nav-number">4.1.</span> <span class="nav-text">第一步、创建镜像</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E6%AD%A5%E3%80%81%E5%88%9B%E5%BB%BA%E9%85%8D%E7%BD%AE"><span class="nav-number">4.2.</span> <span class="nav-text">第二步、创建配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E6%AD%A5%E3%80%81%E5%88%9B%E5%BB%BA%E8%99%9A%E6%8B%9F%E6%9C%BA"><span class="nav-number">4.3.</span> <span class="nav-text">第三步、创建虚拟机</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">5.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CITAHub</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/citahub" title="CITAHub仓库 → https:&#x2F;&#x2F;github.com&#x2F;citahub" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITAHub仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/cita-cloud" title="CITA-Cloud仓库 → https:&#x2F;&#x2F;github.com&#x2F;cita-cloud" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITA-Cloud仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:contact@rivtower.com" title="E-Mail → mailto:contact@rivtower.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://talk.citahub.com/" title="论坛 → https:&#x2F;&#x2F;talk.citahub.com" rel="noopener me" target="_blank"><i class="fab fa-stack-overflow fa-fw"></i>论坛</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://docs.citahub.com/zh-CN/welcome" title="CITAHub文档 → https:&#x2F;&#x2F;docs.citahub.com&#x2F;zh-CN&#x2F;welcome" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITAHub文档</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://cita-cloud-docs.readthedocs.io/zh_CN/latest/" title="CITA-Cloud文档 → https:&#x2F;&#x2F;cita-cloud-docs.readthedocs.io&#x2F;zh_CN&#x2F;latest&#x2F;" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITA-Cloud文档</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cita-cloud.github.io/cloud-init-quickstart/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CITAHub">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="技术沙龙第十期-cloud-init快速开始 | CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          技术沙龙第十期-cloud-init快速开始
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2022-03-03 05:57:01" itemprop="dateCreated datePublished" datetime="2022-03-03T05:57:01+08:00">2022-03-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E4%BA%91%E8%AE%A1%E7%AE%97/" itemprop="url" rel="index"><span itemprop="name">云计算</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>1.3k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>5 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>以前，在操作系统的安装过程中：首先，我们需要准备操作系统镜像（通常是 ISO 镜像），并制作启动盘以从中启动。然后，在系统安装的过程中，用户与安装界面交互，填写必要的操作系统安装参数。最后，操作系统安装工具根据用户填写的参数完成系统安装与配置。</p>
+<p>后来，出现无人值守安装：即预先将在以往安装过程中需要填写的操作参数写入配置文件。然后，向操作系统安装工具传递该配置文件的路径或读取方法。最后，操作系统安装工具在启动时，自动读取配置文件，以自动完成操作系统安装。</p>
+<p>现在，我们发现：对于已安装完成的操作系统，能够通过克隆复制，直接得到可运行的操作系统。例如：对于安装到硬盘的操作系统，我们能够使用硬盘工具，直接克隆到新硬盘；对于安装到虚拟机的操作系统，我们能够直接复制虚拟机磁盘文件。所有没有必要再进行复杂、冗长的操作系统安装过程。</p>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>cloud-init，正是这样一个工具，通过 cloud-init 装置，我们能够彻底省略安装过程，利用已完成安装的虚拟磁盘文件，更快速的完成操作系统部署过程。</p>
+<p>cloud-init 是行业标准的跨平台云实例初始化的多分发方法，所有主要的公共云提供商、私有云基础设施的供应系统和裸机安装都支持它。多数云环境都是通过这种方式来完成操作系统的快速安装部署。</p>
+<h3 id="原理简述"><a href="#原理简述" class="headerlink" title="原理简述"></a>原理简述</h3><p>为了使用 cloud-init 装置，我们需要准备 镜像 与 配置 两样东西：</p>
+<ul>
+<li>1）镜像：是已经安装完成的操作系统镜像文件（比如虚拟机磁盘 VMDK 文件），而不再需要操作系统安装镜像；</li>
+<li>2）配置：我们再编写描述操作系统信息的配置文件，该配置文件包含 主机名、帐号密码、网络配置、磁盘配置 等等配置信息；</li>
+<li>3）当镜像启动时，在镜像内置的 cloud-init 进程随之启动，通过读取该配置文件，在启动过程中直接完成操作系统的配置；</li>
+</ul>
+<h2 id="概念术语"><a href="#概念术语" class="headerlink" title="概念术语"></a>概念术语</h2><h3 id="Cloud-Image"><a href="#Cloud-Image" class="headerlink" title="Cloud Image"></a>Cloud Image</h3><p>我们前面提到的“镜像”，在 cloud-init 中，被称为“Cloud Image”：</p>
+<ul>
+<li>1）它是个已完成操作系统安装的磁盘文件；</li>
+<li>2）每个虚拟机的磁盘都是 Cloud Image 的克隆；</li>
+</ul>
+<h3 id="Datasource"><a href="#Datasource" class="headerlink" title="Datasource"></a>Datasource</h3><p>我们前面提到的“配置”，在 cloud-init 中，被称为“Datasource”：</p>
+<ul>
+<li>1）为每个虚拟机提供各种配置，比如 Hostname、Network Configuration、Password 等等；</li>
+<li>2）该配置由用户负责编写；</li>
+</ul>
+<p>Datasource 主要提供两个配置文件：user-data；meta-data；</p>
+<p>获取 Datasource 的常用方法有两种：</p>
+<ul>
+<li>1）HTTP：通过 HTTP 获取配置文件地址，而地址已预先硬编码到 Cloud Image 中（很多云厂商使用这种方式）；</li>
+<li>2）NoCloud：将配置文件打包到 ISO 镜像，并挂载到虚拟机中；</li>
+</ul>
+<h3 id="cloud-init"><a href="#cloud-init" class="headerlink" title="cloud-init"></a>cloud-init</h3><p>被集成到 Cloud Image 中，当镜像启动时，将运行 cloud-init 进程；</p>
+<p>当运行 cloud-init 服务时，主要完成两项工作：</p>
+<ul>
+<li>1）探测并读取 Datasource 配置；</li>
+<li>2）将这些配置应用到当前的虚拟机实例中；</li>
+</ul>
+<h2 id="安装使用"><a href="#安装使用" class="headerlink" title="安装使用"></a>安装使用</h2><h3 id="第一步、创建镜像"><a href="#第一步、创建镜像" class="headerlink" title="第一步、创建镜像"></a>第一步、创建镜像</h3><p>下载 Cloud Image 文件：<a target="_blank" rel="noopener" href="https://cloud-images.ubuntu.com/">https://cloud-images.ubuntu.com/</a></p>
+<pre><code># .img 文件为 QCOW2 格式
+wget http://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img
+
+# 创建磁盘文件 
+qemu-img convert -f qcow2 -O raw focal-server-cloudimg-amd64.img focal-server-cloudimg-amd64.raw
+qemu-img resize focal-server-cloudimg-amd64.raw 100G
+
+# 创建磁盘文件：此方式使用 QCOW2 的写时复制特性，hal9000.img 引用 focal-server-cloudimg-amd64.img 文件，空间占用小
+qemu-img create -b focal-server-cloudimg-amd64.img -f qcow2 -F qcow2 hal9000.img 10G
+</code></pre>
+<h3 id="第二步、创建配置"><a href="#第二步、创建配置" class="headerlink" title="第二步、创建配置"></a>第二步、创建配置</h3><pre><code>apt-get install whois cloud-image-utils
+
+mkpasswd -m sha512crypt 123456 -S &quot;12345342&quot;
+
+cat &gt; user-data &lt;&lt;EOF
+#cloud-config
+
+hostname: focal-server
+manage_etc_hosts: localhost
+
+users:
+  - name: root
+    lock_passwd: false
+    hashed_passwd: &#39;&lt;the output of mkpassword...&gt;&#39;
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3NzaC1y...
+
+# SSH
+ssh_pwauth: True
+disable_root: false
+EOF
+
+cloud-localds user-data.iso user-data
+</code></pre>
+<h3 id="第三步、创建虚拟机"><a href="#第三步、创建虚拟机" class="headerlink" title="第三步、创建虚拟机"></a>第三步、创建虚拟机</h3><p>然后，在虚拟机中同时挂载 focal-server-cloudimg-amd64.raw 与 user-data.iso 文件；</p>
+<pre><code>virt-install              \
+    --vcpus=4             \
+    --ram=8192            \
+    --import              \
+    --os-variant=ubuntu20.04      \
+    --network network=cluster-network,model=virtio                \
+    --graphics vnc,listen=0.0.0.0 \
+    --noautoconsole               \
+    --disk path=/srv/isos/user-data.iso,device=cdrom              \
+    --disk path=/srv/image/focal-server-cloudimg-amd64.raw,format=qcow2   \
+    --name=focal-server
+</code></pre>
+<p>当开机启动完成后，便可通过 root&#x2F;123456 进行登录；</p>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p><a target="_blank" rel="noopener" href="https://cloudinit.readthedocs.io/en/latest/">cloud-init Documentation — cloud-init 22.1 documentation</a></p>
+<p><a target="_blank" rel="noopener" href="https://askubuntu.com/questions/451673/default-username-password-for-ubuntu-cloud-image">12.04 - Default username&#x2F;password for Ubuntu Cloud image? - Ask Ubuntu</a></p>
+<p><a target="_blank" rel="noopener" href="https://cloudinit.readthedocs.io/en/latest/topics/network-config-format-v2.html#">Networking Config Version 2 — cloud-init 22.1 documentation</a></p>
+<p><a target="_blank" rel="noopener" href="https://serverfault.com/questions/920117/how-do-i-set-a-password-on-an-ubuntu-cloud-image">linux - How do I set a password on an Ubuntu cloud image? - Server Fault</a></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/vmware/photon/issues/659">How to set root password with cloud-config? · Issue #659 · vmware&#x2F;photon · GitHub</a></p>
+<p><a target="_blank" rel="noopener" href="https://askubuntu.com/questions/451673/default-username-password-for-ubuntu-cloud-image">12.04 - Default username&#x2F;password for Ubuntu Cloud image? - Ask Ubuntu</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.tcc-consulting.com.hk/110/cloud-technology/cloud-init-to-enable-cloud-image-root-login/">Cloud-init To Enable Cloud Image Root Login – TCC Consulting Limited</a></p>
+<p><a target="_blank" rel="noopener" href="https://mcwhirter.com.au/craige/blog/2015/Enable_Root_Login_Over_SSH_With_Cloud-Init_On_OpenStack/">mcwhirter.com.au&#x2F;craige&#x2F;blog&#x2F;2015&#x2F;Enable Root Login Over SSH With Cloud-Init on OpenStack</a></p>
+<p><a target="_blank" rel="noopener" href="https://sumit-ghosh.com/articles/create-vm-using-libvirt-cloud-images-cloud-init/">Creating a VM using Libvirt, Cloud Image and Cloud-Init | Sumit’s Dreams of Electric Sheeps</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/tech-salon-9/" rel="prev" title="技术沙龙第九期">
+                  <i class="fa fa-angle-left"></i> 技术沙龙第九期
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/rollup-in-consortium-blockchain/" rel="next" title="技术沙龙第十一期-联盟链中的Rollup方案">
+                  技术沙龙第十一期-联盟链中的Rollup方案 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CITAHub</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">43k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">2:38</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://unpkg.com/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/pangu@4.0.7/dist/browser/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  <script src="https://unpkg.com/hexo-generator-searchdb@1.4.1/dist/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

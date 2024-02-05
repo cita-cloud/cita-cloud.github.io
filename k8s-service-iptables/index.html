@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"cita-cloud.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="什么是负载均衡负载均衡是高可用架构中的一个关键组件，他可以将请求平摊到后端服务上。 在单副本应用时代，你的服务负载可能并不高，这个时候负载均衡并没有多大用处。当你的应用火爆，用户请求数量多时，你需要将你的服务从单副本转变为多副本，那这个时候，是很有必要引入负载均衡的。 特别是当前微服务盛行的时代，一个应用多副本的高可用形态随处可见，负载均衡已经是个不可或缺的组件了。 Kubernetes中的Ser">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kubernetes中的负载均衡原理————以iptables模式为例">
+<meta property="og:url" content="https://cita-cloud.github.io/k8s-service-iptables/index.html">
+<meta property="og:site_name" content="CITAHub技术团队">
+<meta property="og:description" content="什么是负载均衡负载均衡是高可用架构中的一个关键组件，他可以将请求平摊到后端服务上。 在单副本应用时代，你的服务负载可能并不高，这个时候负载均衡并没有多大用处。当你的应用火爆，用户请求数量多时，你需要将你的服务从单副本转变为多副本，那这个时候，是很有必要引入负载均衡的。 特别是当前微服务盛行的时代，一个应用多副本的高可用形态随处可见，负载均衡已经是个不可或缺的组件了。 Kubernetes中的Ser">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cita-cloud.github.io/k8s-service-iptables/iptables-svc.png">
+<meta property="og:image" content="https://cita-cloud.github.io/k8s-service-iptables/snat.png">
+<meta property="article:published_time" content="2022-06-07T09:45:14.000Z">
+<meta property="article:modified_time" content="2022-06-07T09:45:14.000Z">
+<meta property="article:author" content="CITAHub">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cita-cloud.github.io/k8s-service-iptables/iptables-svc.png">
+
+
+<link rel="canonical" href="https://cita-cloud.github.io/k8s-service-iptables/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://cita-cloud.github.io/k8s-service-iptables/","path":"k8s-service-iptables/","title":"Kubernetes中的负载均衡原理————以iptables模式为例"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Kubernetes中的负载均衡原理————以iptables模式为例 | CITAHub技术团队</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">CITAHub技术团队</p>
+      <i class="logo-line"></i>
+    </a>
+      <img class="custom-logo-image" src="/uploads/citahub.jpg" alt="CITAHub技术团队">
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1"><span class="nav-number">1.</span> <span class="nav-text">什么是负载均衡</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Kubernetes%E4%B8%AD%E7%9A%84Service%E4%BB%8B%E7%BB%8D"><span class="nav-number">2.</span> <span class="nav-text">Kubernetes中的Service介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#iptables"><span class="nav-number">4.</span> <span class="nav-text">iptables</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-number">5.</span> <span class="nav-text">实验</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E5%87%86%E5%A4%87"><span class="nav-number">5.1.</span> <span class="nav-text">1. 准备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-ClusterIP"><span class="nav-number">5.2.</span> <span class="nav-text">2. ClusterIP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-NodePort"><span class="nav-number">5.3.</span> <span class="nav-text">3. NodePort</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-LoadBalance"><span class="nav-number">5.4.</span> <span class="nav-text">4. LoadBalance</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90"><span class="nav-number">6.</span> <span class="nav-text">原理分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AE%BA"><span class="nav-number">7.</span> <span class="nav-text">结论</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CITAHub</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/citahub" title="CITAHub仓库 → https:&#x2F;&#x2F;github.com&#x2F;citahub" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITAHub仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/cita-cloud" title="CITA-Cloud仓库 → https:&#x2F;&#x2F;github.com&#x2F;cita-cloud" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITA-Cloud仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:contact@rivtower.com" title="E-Mail → mailto:contact@rivtower.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://talk.citahub.com/" title="论坛 → https:&#x2F;&#x2F;talk.citahub.com" rel="noopener me" target="_blank"><i class="fab fa-stack-overflow fa-fw"></i>论坛</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://docs.citahub.com/zh-CN/welcome" title="CITAHub文档 → https:&#x2F;&#x2F;docs.citahub.com&#x2F;zh-CN&#x2F;welcome" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITAHub文档</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://cita-cloud-docs.readthedocs.io/zh_CN/latest/" title="CITA-Cloud文档 → https:&#x2F;&#x2F;cita-cloud-docs.readthedocs.io&#x2F;zh_CN&#x2F;latest&#x2F;" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITA-Cloud文档</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cita-cloud.github.io/k8s-service-iptables/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CITAHub">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Kubernetes中的负载均衡原理————以iptables模式为例 | CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Kubernetes中的负载均衡原理————以iptables模式为例
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2022-06-07 17:45:14" itemprop="dateCreated datePublished" datetime="2022-06-07T17:45:14+08:00">2022-06-07</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Kubernetes/" itemprop="url" rel="index"><span itemprop="name">Kubernetes</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>3.7k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>13 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="什么是负载均衡"><a href="#什么是负载均衡" class="headerlink" title="什么是负载均衡"></a>什么是负载均衡</h2><p>负载均衡是高可用架构中的一个关键组件，他可以将请求平摊到后端服务上。</p>
+<p>在单副本应用时代，你的服务负载可能并不高，这个时候负载均衡并没有多大用处。当你的应用火爆，用户请求数量多时，你需要将你的服务从单副本转变为多副本，那这个时候，是很有必要引入负载均衡的。</p>
+<p>特别是当前微服务盛行的时代，一个应用多副本的高可用形态随处可见，负载均衡已经是个不可或缺的组件了。</p>
+<h2 id="Kubernetes中的Service介绍"><a href="#Kubernetes中的Service介绍" class="headerlink" title="Kubernetes中的Service介绍"></a>Kubernetes中的Service介绍</h2><p>我们知道，Kubernetes中的Pod由于各种原因随时有可能被销毁和新建，且一般应用均以多副本的形式存在。</p>
+<p>如果你想要访问一组Pod（或称之为微服务）时，必须有一种抽象资源，能够跟踪到其下所有的Pod，这个抽象便是Service。</p>
+<p>Service主要有如下作用：</p>
+<ul>
+<li>服务发现：动态地将具有相同selector标志的后端Pod绑定起来</li>
+<li>负载均衡：通过iptables或ipvs的负载均衡算法实现</li>
+</ul>
+<p>这里我们主要来讲下Service的负载均衡。</p>
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>从 <a target="_blank" rel="noopener" href="https://kubernetes.io/zh/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies">官网</a> 可知，Service有三种代理模式：</p>
+<ul>
+<li>userspace代理模式</li>
+<li>iptables代理模式</li>
+<li>IPVS代理模式</li>
+</ul>
+<p>以iptables模式为例：</p>
+<p><img src="/k8s-service-iptables/iptables-svc.png"></p>
+<p>可以从图上看到，有一个重要的组件————kube-proxy，它以DaemonSet的形式存在，通过访问apiserver并watch相应资源(Service对象和Endpoint对象)来动态生成各自节点上的iptables规则。</p>
+<p>当用户想要访问Pod服务时，iptables会通过NAT(网络地址转化)等方式<strong>随机</strong>请求到任意一个Pod。</p>
+<p>在iptables模式下，kube-proxy通过在目标Node节点上的iptables配置中的NAT表的PREROUTIN和POSTROUTING链中创建一系列的自定义链(这些自定义链主要是”KUBE-SERVICE”链， “KUBE-POSTROUTING”链，每个服务对应的”KUBE-SVC-XXXXXX”链和”KUBE-SEP-XXXX”链)，然后通过这些自定义链对流经到该Node的数据包做DNAT和SNAT操作从而实现路由，负载均衡和地址转化。</p>
+<h2 id="iptables"><a href="#iptables" class="headerlink" title="iptables"></a>iptables</h2><p>iptables是Linux平台下的包过滤防火墙，相关的四表五链知识可以去网上学习了解。</p>
+<p>当设置了iptables规则后，每个数据包都要通过iptables的过滤，不同流向的数据包会通过不同的链：</p>
+<ul>
+<li>到本机某进程的报文：PREROUTING –&gt; INPUT</li>
+<li>由本机转发的报文：PREROUTING –&gt; FORWARD –&gt; POSTROUTING</li>
+<li>由本机的某进程发出报文：OUTPUT –&gt; POSTROUTING</li>
+</ul>
+<p>每个链上会有一些规则去过滤数据包进行操作，这些规则在大体上又可以分为4类，分别存在4张table中：</p>
+<ul>
+<li>filter表：负责过滤功能，防火墙；内核模块：iptables_filter</li>
+<li>nat表：network address translation，网络地址转换功能；内核模块：iptable_nat</li>
+<li>mangle表：拆解报文，做出修改，并重新封装 的功能；内核模块：iptable_mangle</li>
+<li>raw表：关闭nat表上启用的连接追踪机制；内核模块：iptable_raw</li>
+</ul>
+<h2 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h2><p>下面我们来做个实验，具体看下<code>kube-proxy</code>生成的<code>iptables</code>规则是怎样请求到其中一个<code>Pod</code>里的</p>
+<h3 id="1-准备"><a href="#1-准备" class="headerlink" title="1. 准备"></a>1. 准备</h3><p>在集群中应用如下创建一个名为nginx-service的Service和副本数为3的nginx Deployment：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">创建Deployment</span></span><br><span class="line">kubectl create deployment nginx --image=nginx --replicas=3</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">创建Service</span></span><br><span class="line">kubectl expose deployment nginx --port=80 --target-port=80</span><br></pre></td></tr></table></figure>
+<p>我们可以看到3个Pod的ip分别为:</p>
+<ul>
+<li>10.244.1.14</li>
+<li>10.244.1.16</li>
+<li>10.244.1.17</li>
+</ul>
+<p>给Service分配的ip为: 10.97.54.248</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">kubectl get pod -owide</span></span><br><span class="line"></span><br><span class="line">NAME                     READY   STATUS    RESTARTS   AGE   IP            NODE    NOMINATED NODE   READINESS GATES</span><br><span class="line">busybox                  1/1     Running   0          24s   10.244.1.20   node1   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">nginx-6799fc88d8-8jnxd   1/1     Running   0          39h   10.244.1.14   node1   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">nginx-6799fc88d8-g4d5x   1/1     Running   0          39h   10.244.1.16   node1   &lt;none&gt;           &lt;none&gt;</span><br><span class="line">nginx-6799fc88d8-q45nc   1/1     Running   0          44m   10.244.1.17   node1   &lt;none&gt;           &lt;none&gt;</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">kubectl get svc</span></span><br><span class="line"></span><br><span class="line">NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE</span><br><span class="line">kubernetes   ClusterIP   10.96.0.1      &lt;none&gt;        443/TCP   175d</span><br><span class="line">nginx-svc    ClusterIP   10.97.54.248   &lt;none&gt;        80/TCP    3m1s</span><br></pre></td></tr></table></figure>
+
+<p>我们可以看到nginx Service其下已有一组Endpoint暴露出来，对应的便是3个Pod的ip地址</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">kubectl describe svc nginx-svc</span></span><br><span class="line"></span><br><span class="line">Name:              nginx-svc</span><br><span class="line">Namespace:         default</span><br><span class="line">Labels:            app=nginx</span><br><span class="line">Annotations:       &lt;none&gt;</span><br><span class="line">Selector:          app=nginx</span><br><span class="line">Type:              ClusterIP</span><br><span class="line">IP Family Policy:  SingleStack</span><br><span class="line">IP Families:       IPv4</span><br><span class="line">IP:                10.97.54.248</span><br><span class="line">IPs:               10.97.54.248</span><br><span class="line">Port:              &lt;unset&gt;  80/TCP</span><br><span class="line">TargetPort:        80/TCP</span><br><span class="line">Endpoints:         10.244.1.14:80,10.244.1.16:80,10.244.1.17:80</span><br><span class="line">Session Affinity:  None</span><br><span class="line">Events:            &lt;none&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-ClusterIP"><a href="#2-ClusterIP" class="headerlink" title="2. ClusterIP"></a>2. ClusterIP</h3><p>此外，我还建了一个busybox的镜像作为请求的发起方，他的地址是：10.244.1.20</p>
+<p>所以当前的请求路径是：10.244.1.20(busybox) –&gt; 10.97.54.248:80(nginx-svc)</p>
+<p>根据前文知识（由本机的某进程发出报文），我们先来看主机上的OUTPUT链上的nat表</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">root@master:~# iptables -t nat -nvL OUTPUT</span><br><span class="line"></span><br><span class="line">Chain OUTPUT (policy ACCEPT 878 packets, 52888 bytes)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">  37M 2597M KUBE-SERVICES  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */</span><br><span class="line">  11M  673M DOCKER     all  --  *      *       0.0.0.0/0           !127.0.0.0/8          ADDRTYPE match dst-type LOCAL</span><br></pre></td></tr></table></figure>
+<p>可以看到流量指向了KUBE-SERVICES的链</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">root@master:~# iptables -t nat -nvL KUBE-SERVICES</span><br><span class="line">Chain KUBE-SERVICES (2 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">    0     0 KUBE-SVC-HL5LMXD5JFHQZ6LN  tcp  --  *      *       0.0.0.0/0            10.97.54.248         /* default/nginx-svc cluster IP */ tcp dpt:80</span><br><span class="line">    0     0 KUBE-SVC-NPX46M4PTMTKRN6Y  tcp  --  *      *       0.0.0.0/0            10.96.0.1            /* default/kubernetes:https cluster IP */ tcp dpt:443</span><br><span class="line">    0     0 KUBE-SVC-TCOU7JCQXEZGVUNU  udp  --  *      *       0.0.0.0/0            10.96.0.10           /* kube-system/kube-dns:dns cluster IP */ udp dpt:53</span><br><span class="line">    0     0 KUBE-SVC-ERIFXISQEP7F7OF4  tcp  --  *      *       0.0.0.0/0            10.96.0.10           /* kube-system/kube-dns:dns-tcp cluster IP */ tcp dpt:53</span><br><span class="line">    0     0 KUBE-SVC-JD5MR3NA4I4DYORP  tcp  --  *      *       0.0.0.0/0            10.96.0.10           /* kube-system/kube-dns:metrics cluster IP */ tcp dpt:9153</span><br><span class="line"> 1756  106K KUBE-NODEPORTS  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service nodeports; NOTE: this must be the last rule in this chain */ ADDRTYPE match dst-type LOCAL</span><br></pre></td></tr></table></figure>
+<p>由于目标是Service的ip(10.97.54.248)，所以这边又匹配到了KUBE-SVC-HL5LMXD5JFHQZ6LN这条链。</p>
+<p>也可以从后面的注释中看到下面需要走哪条链</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">root@master:~# iptables -t nat -nvL KUBE-SVC-HL5LMXD5JFHQZ6LN</span><br><span class="line">Chain KUBE-SVC-HL5LMXD5JFHQZ6LN (1 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">    0     0 KUBE-MARK-MASQ  tcp  --  *      *      !10.244.0.0/16        10.97.54.248         /* default/nginx-svc cluster IP */ tcp dpt:80</span><br><span class="line">    0     0 KUBE-SEP-U46YXJIMXXUGWXXH  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc */ statistic mode random probability 0.33333333349</span><br><span class="line">    0     0 KUBE-SEP-DUL3TOEKR4Q7XNNH  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc */ statistic mode random probability 0.50000000000</span><br><span class="line">    0     0 KUBE-SEP-OJQRYVIILJUTFXOB  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc */</span><br></pre></td></tr></table></figure>
+<p>到这里，若源端不是10.244.0.0&#x2F;16的话，会被打上标记；由于我们的busybox是该网段的，这条规则略过。</p>
+<p>然后会随机匹配KUBE-SEP-U46YXJIMXXUGWXXH，KUBE-SEP-DUL3TOEKR4Q7XNNH，KUBE-SEP-OJQRYVIILJUTFXOB这三条链的其中一条。</p>
+<p>其意思是：会有1&#x2F;3的概率命中KUBE-SEP-U46YXJIMXXUGWXXH这条链，如果没命中的话，会有2&#x2F;3 * 1&#x2F;2 &#x3D; 1&#x2F;3 的概率命中第二条链KUBE-SEP-DUL3TOEKR4Q7XNNH，最后还有1&#x2F;3的概率命中最后一条链KUBE-SEP-OJQRYVIILJUTFXOB。</p>
+<p>可以看出，这边是在做负载均衡。</p>
+<p>我们选择其中一条链KUBE-SEP-U46YXJIMXXUGWXXH继续走下去</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">root@master:~# iptables -t nat -nvL KUBE-SEP-U46YXJIMXXUGWXXH</span><br><span class="line">Chain KUBE-SEP-U46YXJIMXXUGWXXH (1 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">    0     0 KUBE-MARK-MASQ  all  --  *      *       10.244.1.14          0.0.0.0/0            /* default/nginx-svc */</span><br><span class="line">    0     0 DNAT       tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc */ tcp to:10.244.1.14:80</span><br></pre></td></tr></table></figure>
+<p>KUBE-MARK-MASQ自己Pod内访问，打上标记，可以先不看。</p>
+<p>看DNAT那条链，可以看到这里做了目标地址转化，最终我们的请求从：<br>10.244.1.20(busybox) –&gt; 10.97.54.248:80(nginx-svc)<br>变成了<br>10.244.1.20(busybox) –&gt; 10.244.1.14:80(nginx-6799fc88d8-8jnxd)</p>
+<p>OUTPUT链走完之后还会经过POSTROUTING链：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">root@master:~# iptables -t nat -nvL POSTROUTING</span><br><span class="line">Chain POSTROUTING (policy ACCEPT 5321 packets, 321K bytes)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">  41M 2939M KUBE-POSTROUTING  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes postrouting rules */</span><br><span class="line">    0     0 MASQUERADE  all  --  *      !docker0  172.17.0.0/16        0.0.0.0/0</span><br><span class="line">6994K  525M RETURN     all  --  *      *       10.244.0.0/16        10.244.0.0/16</span><br><span class="line"> 758K   67M MASQUERADE  all  --  *      *       10.244.0.0/16       !224.0.0.0/4          random-fully</span><br><span class="line">    0     0 RETURN     all  --  *      *      !10.244.0.0/16        10.244.0.0/24</span><br><span class="line">    0     0 MASQUERADE  all  --  *      *      !10.244.0.0/16        10.244.0.0/16        random-fully</span><br><span class="line">root@master:~# iptables -t nat -nvL KUBE-POSTROUTING</span><br><span class="line">Chain KUBE-POSTROUTING (1 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line"> 5396  325K RETURN     all  --  *      *       0.0.0.0/0            0.0.0.0/0            mark match ! 0x4000/0x4000</span><br><span class="line">    0     0 MARK       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MARK xor 0x4000</span><br><span class="line">    0     0 MASQUERADE  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service traffic requiring SNAT */ random-fully</span><br></pre></td></tr></table></figure>
+<p>KUBE-POSTROUTING会对数据包进行判断，如果发现它有0x4000&#x2F;0x4000标记，就会跳到MASQUERADE规则，由于我们并没有被打上标记，直接RETURN。</p>
+<h3 id="3-NodePort"><a href="#3-NodePort" class="headerlink" title="3. NodePort"></a>3. NodePort</h3><p>NodePort是集群外访问集群内服务的一种方式，从iptables规则来看，NodePort是ClusterIP的超集，额外比ClusterIP多了一些规则。</p>
+<p>现在我把原来的ClusterIP删了之后创建了一个名为nginx-svc-nodeport的NodePort类型的service。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">zjq@master:~$ kubectl get svc</span><br><span class="line"></span><br><span class="line">NAME                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE</span><br><span class="line">kubernetes           ClusterIP   10.96.0.1        &lt;none&gt;        443/TCP        175d</span><br><span class="line">nginx-svc-nodeport   NodePort    10.109.235.134   &lt;none&gt;        80:31082/TCP   10s</span><br></pre></td></tr></table></figure>
+<p>该Service对集群外暴露的端口是31082，这个端口是由每个节点上的kube-proxy打开的，可以用如下命令查看：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">root@master:~# netstat -anp | grep 31082</span><br><span class="line">tcp        0      0 0.0.0.0:31082           0.0.0.0:*               LISTEN      1231199/kube-proxy</span><br><span class="line"></span><br><span class="line">root@node1:~# netstat -anp | grep 31082</span><br><span class="line">tcp        0      0 0.0.0.0:31082           0.0.0.0:*               LISTEN      1986768/kube-proxy</span><br></pre></td></tr></table></figure>
+<p>这样，你便能通过任意节点+port的方式访问到微服务了。</p>
+<p>现在我们来看下NodePort类型的iptables。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">root@master:~# iptables -t nat -nvL PREROUTING</span><br><span class="line">Chain PREROUTING (policy ACCEPT 20 packets, 980 bytes)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">6621K  791M KUBE-SERVICES  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service portals */</span><br><span class="line">2918K  426M DOCKER     all  --  *      *       0.0.0.0/0            0.0.0.0/0            ADDRTYPE match dst-type LOCAL</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">root@master:~# iptables -t nat -nvL KUBE-SERVICES</span><br><span class="line">Chain KUBE-SERVICES (2 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">    0     0 KUBE-SVC-XKWTKZBTDCMU3FHC  tcp  --  *      *       0.0.0.0/0            10.109.235.134       /* default/nginx-svc-nodeport cluster IP */ tcp dpt:80</span><br><span class="line">    0     0 KUBE-SVC-NPX46M4PTMTKRN6Y  tcp  --  *      *       0.0.0.0/0            10.96.0.1            /* default/kubernetes:https cluster IP */ tcp dpt:443</span><br><span class="line">    0     0 KUBE-SVC-TCOU7JCQXEZGVUNU  udp  --  *      *       0.0.0.0/0            10.96.0.10           /* kube-system/kube-dns:dns cluster IP */ udp dpt:53</span><br><span class="line">    0     0 KUBE-SVC-ERIFXISQEP7F7OF4  tcp  --  *      *       0.0.0.0/0            10.96.0.10           /* kube-system/kube-dns:dns-tcp cluster IP */ tcp dpt:53</span><br><span class="line">    0     0 KUBE-SVC-JD5MR3NA4I4DYORP  tcp  --  *      *       0.0.0.0/0            10.96.0.10           /* kube-system/kube-dns:metrics cluster IP */ tcp dpt:9153</span><br><span class="line"> 1978  119K KUBE-NODEPORTS  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes service nodeports; NOTE: this must be the last rule in this chain */ ADDRTYPE match dst-type LOCAL</span><br></pre></td></tr></table></figure>
+<p>从上述看到，会先跳转掉KUBE-NODEPORTS这条链，来看下KUBE-NODEPORTS这条链之后的路径</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">root@master:~# iptables -t nat -nvL KUBE-NODEPORTS</span><br><span class="line">Chain KUBE-NODEPORTS (1 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">    0     0 KUBE-SVC-XKWTKZBTDCMU3FHC  tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc-nodeport */ tcp dpt:31082</span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">root@master:~# iptables -t nat -nvL KUBE-SVC-XKWTKZBTDCMU3FHC</span><br><span class="line">Chain KUBE-SVC-XKWTKZBTDCMU3FHC (2 references)</span><br><span class="line"> pkts bytes target     prot opt in     out     source               destination</span><br><span class="line">    0     0 KUBE-MARK-MASQ  tcp  --  *      *      !10.244.0.0/16        10.109.235.134       /* default/nginx-svc-nodeport cluster IP */ tcp dpt:80</span><br><span class="line">    0     0 KUBE-MARK-MASQ  tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc-nodeport */ tcp dpt:31082</span><br><span class="line">    0     0 KUBE-SEP-VLHANZGCXJXNRTPY  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc-nodeport */ statistic mode random probability 0.33333333349</span><br><span class="line">    0     0 KUBE-SEP-L66MBC5WQIY6TV6O  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc-nodeport */ statistic mode random probability 0.50000000000</span><br><span class="line">    0     0 KUBE-SEP-EAEOYSPXP66WOJLO  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* default/nginx-svc-nodeport */</span><br></pre></td></tr></table></figure>
+<p>先会匹配到第二个KUBE-MARK-MASQ链，用于打上标记(之后有用)。</p>
+<p>再往下，通过随机负载均衡和ClusterIP的逻辑一致。</p>
+<p>这里需要注意的一点是，这时候执行KUBE-POSTROUTING链时，由于匹配到之前做的标记0x4000，会做一个SNAT操作。</p>
+<p>为什么要做SNAT转化呢？这边假设一个场景，如下图：</p>
+<p><img src="/k8s-service-iptables/snat.png"></p>
+<p>当一个外部的client通过node2的地址访问一个Service的时候，node2上的负载均衡规则，就可能把这个IP包转发给一个在node1上的Pod。这里没有任何问题。</p>
+<p>而当node1上的这个Pod处理完请求之后，它就会按照这个IP包的源地址发出回复。</p>
+<p>可是，如果没有做SNAT操作的话，这时候，被转发来的IP包的源地址就是client的IP地址。所以此时，Pod就会直接将回复发给client。对于client来说，它的请求明明发给了node2，收到的回复却来自node1，这个client很可能会报错。</p>
+<h3 id="4-LoadBalance"><a href="#4-LoadBalance" class="headerlink" title="4. LoadBalance"></a>4. LoadBalance</h3><p>LoadBalance是NodePort的超集，这边不再分析。</p>
+<h2 id="原理分析"><a href="#原理分析" class="headerlink" title="原理分析"></a>原理分析</h2><p>通过分析kube-proxy的实现能够更好地理解Service的实现。</p>
+<p>新建proxyServer对象newProxyServer方法，会根据不同的模式来初始化proxier对象。</p>
+<p>如果你的节点未开启ipvs，则自动降级为iptables模式。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">newProxyServer</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">config *proxyconfigapi.KubeProxyConfiguration,</span></span></span><br><span class="line"><span class="params"><span class="function">cleanupAndExit <span class="type">bool</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">master <span class="type">string</span>)</span></span> (*ProxyServer, <span class="type">error</span>) &#123;</span><br><span class="line">	...</span><br><span class="line">	<span class="keyword">if</span> proxyMode == proxyModeIPTables &#123;</span><br><span class="line">        klog.V(<span class="number">0</span>).InfoS(<span class="string">&quot;Using iptables Proxier&quot;</span>)</span><br><span class="line">        ...</span><br><span class="line">        <span class="keyword">if</span> dualStack &#123;</span><br><span class="line">            ...</span><br><span class="line">            <span class="comment">// TODO this has side effects that should only happen when Run() is invoked.</span></span><br><span class="line">            proxier, err = iptables.NewDualStackProxier(</span><br><span class="line">            ipt,</span><br><span class="line">            utilsysctl.New(),</span><br><span class="line">            execer,</span><br><span class="line">            config.IPTables.SyncPeriod.Duration,</span><br><span class="line">            config.IPTables.MinSyncPeriod.Duration,</span><br><span class="line">            config.IPTables.MasqueradeAll,</span><br><span class="line">            <span class="type">int</span>(*config.IPTables.MasqueradeBit),</span><br><span class="line">            localDetectors,</span><br><span class="line">            hostname,</span><br><span class="line">            nodeIPTuple(config.BindAddress),</span><br><span class="line">            recorder,</span><br><span class="line">            healthzServer,</span><br><span class="line">            config.NodePortAddresses,</span><br><span class="line">            )</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			...</span><br><span class="line">            <span class="comment">// TODO this has side effects that should only happen when Run() is invoked.</span></span><br><span class="line">            proxier, err = iptables.NewProxier(</span><br><span class="line">                iptInterface,</span><br><span class="line">                utilsysctl.New(),</span><br><span class="line">                execer,</span><br><span class="line">                config.IPTables.SyncPeriod.Duration,</span><br><span class="line">                config.IPTables.MinSyncPeriod.Duration,</span><br><span class="line">                config.IPTables.MasqueradeAll,</span><br><span class="line">                <span class="type">int</span>(*config.IPTables.MasqueradeBit),</span><br><span class="line">                localDetector,</span><br><span class="line">                hostname,</span><br><span class="line">                nodeIP,</span><br><span class="line">                recorder,</span><br><span class="line">                healthzServer,</span><br><span class="line">                config.NodePortAddresses,</span><br><span class="line">            )</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nil</span>, fmt.Errorf(<span class="string">&quot;unable to create proxier: %v&quot;</span>, err)</span><br><span class="line">        &#125;</span><br><span class="line">        proxymetrics.RegisterMetrics()</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> proxyMode == proxyModeIPVS &#123;</span><br><span class="line">		...</span><br><span class="line">		klog.V(<span class="number">0</span>).InfoS(<span class="string">&quot;Using ipvs Proxier&quot;</span>)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		...</span><br><span class="line">        klog.V(<span class="number">0</span>).InfoS(<span class="string">&quot;Using userspace Proxier&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>ProxyServer结构体最主要的是Run()方法：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *ProxyServer)</span></span> Run() <span class="type">error</span> &#123;</span><br><span class="line">	...</span><br><span class="line">    <span class="comment">// 暴露/healthz接口</span></span><br><span class="line">    <span class="comment">// Start up a healthz server if requested</span></span><br><span class="line">    serveHealthz(s.HealthzServer, errCh)</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 暴露指标信息</span></span><br><span class="line">    <span class="comment">// Start up a metrics server if requested</span></span><br><span class="line">    serveMetrics(s.MetricsBindAddress, s.ProxyMode, s.EnableProfiling, errCh)</span><br><span class="line">	</span><br><span class="line">	...</span><br><span class="line">    <span class="comment">// 新建informerFactory</span></span><br><span class="line">    <span class="comment">// Make informers that filter out objects that want a non-default service proxy.</span></span><br><span class="line">    informerFactory := informers.NewSharedInformerFactoryWithOptions(s.Client, s.ConfigSyncPeriod,</span><br><span class="line">        informers.WithTweakListOptions(<span class="function"><span class="keyword">func</span><span class="params">(options *metav1.ListOptions)</span></span> &#123;</span><br><span class="line">        options.LabelSelector = labelSelector.String()</span><br><span class="line">        &#125;))</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// kube-proxy主要watch了service和endpoint(或endpointSlices)资源的变动，</span></span><br><span class="line">    <span class="comment">// 当它们有变动时，对应节点上的iptables规则也会相相应地变动</span></span><br><span class="line">    <span class="comment">// Create configs (i.e. Watches for Services and Endpoints or EndpointSlices)</span></span><br><span class="line">    <span class="comment">// Note: RegisterHandler() calls need to happen before creation of Sources because sources</span></span><br><span class="line">    <span class="comment">// only notify on changes, and the initial update (on process start) may be lost if no handlers</span></span><br><span class="line">    <span class="comment">// are registered yet.</span></span><br><span class="line">    serviceConfig := config.NewServiceConfig(informerFactory.Core().V1().Services(), s.ConfigSyncPeriod)</span><br><span class="line">    serviceConfig.RegisterEventHandler(s.Proxier)</span><br><span class="line">    <span class="keyword">go</span> serviceConfig.Run(wait.NeverStop)</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> endpointsHandler, ok := s.Proxier.(config.EndpointsHandler); ok &amp;&amp; !s.UseEndpointSlices &#123;</span><br><span class="line">        endpointsConfig := config.NewEndpointsConfig(informerFactory.Core().V1().Endpoints(), s.ConfigSyncPeriod)</span><br><span class="line">        endpointsConfig.RegisterEventHandler(endpointsHandler)</span><br><span class="line">        <span class="keyword">go</span> endpointsConfig.Run(wait.NeverStop)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        endpointSliceConfig := config.NewEndpointSliceConfig(informerFactory.Discovery().V1().EndpointSlices(), s.ConfigSyncPeriod)</span><br><span class="line">        endpointSliceConfig.RegisterEventHandler(s.Proxier)</span><br><span class="line">        <span class="keyword">go</span> endpointSliceConfig.Run(wait.NeverStop)</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 启动informer</span></span><br><span class="line">    <span class="comment">// This has to start after the calls to NewServiceConfig and NewEndpointsConfig because those</span></span><br><span class="line">    <span class="comment">// functions must configure their shared informer event handlers first.</span></span><br><span class="line">    informerFactory.Start(wait.NeverStop)</span><br><span class="line">	</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">// Birth Cry after the birth is successful</span></span><br><span class="line">    s.birthCry()</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 进入定时循环</span></span><br><span class="line">    <span class="keyword">go</span> s.Proxier.SyncLoop()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> &lt;-errCh</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里我们来看下serviceConfig中的Run()方法，这里面根据注册的eventHandlers动作，均会执行OnServiceSynced()方法，</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Run waits for cache synced and invokes handlers after syncing.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *ServiceConfig)</span></span> Run(stopCh &lt;-<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;) &#123;</span><br><span class="line">    klog.InfoS(<span class="string">&quot;Starting service config controller&quot;</span>)</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> !cache.WaitForNamedCacheSync(<span class="string">&quot;service config&quot;</span>, stopCh, c.listerSynced) &#123;</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">for</span> i := <span class="keyword">range</span> c.eventHandlers &#123;</span><br><span class="line">        klog.V(<span class="number">3</span>).InfoS(<span class="string">&quot;Calling handler.OnServiceSynced()&quot;</span>)</span><br><span class="line">        <span class="comment">// 注册的事件动作执行相应的OnServiceSynced()</span></span><br><span class="line">        c.eventHandlers[i].OnServiceSynced()</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在OnServiceSynced中，我们可以看到核心方法syncProxyRules()</p>
+<p>在十分冗长的syncProxyRules方法中(大约800行)，里面就会应用iptables rule到当前的节点。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// OnServiceSynced is called once all the initial event handlers were</span></span><br><span class="line"><span class="comment">// called and the state is fully propagated to local cache.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(proxier *Proxier)</span></span> OnServiceSynced() &#123;</span><br><span class="line">    proxier.mu.Lock()</span><br><span class="line">    proxier.servicesSynced = <span class="literal">true</span></span><br><span class="line">    proxier.setInitialized(proxier.endpointSlicesSynced)</span><br><span class="line">    proxier.mu.Unlock()</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// Sync unconditionally - this is called once per lifetime.</span></span><br><span class="line">    <span class="comment">// 应用iptables rule到节点上</span></span><br><span class="line">    proxier.syncProxyRules()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>本文简单介绍了负载均衡的作用和Kubernetes中负载均衡的原理，并通过一些实验例子来展示请求是如何被转发到Pod中的，最后通过分析核心源码的方式来了解具体实现。</p>
+<p>但是，iptables也存在许多问题：</p>
+<ol>
+<li><p>iptables规则多了之后性能下降。按照 <a target="_blank" rel="noopener" href="https://kubernetes.io/blog/2018/07/09/ipvs-based-in-cluster-load-balancing-deep-dive/#why-ipvs-for-kubernetes">官方说法</a>:</p>
+<blockquote>
+<p>尽管 Kubernetes 在版本1.6中已经支持5000个节点，但是使用 iptables 的 kube-proxy 实际上是将集群扩展到5000个节点的一个瓶颈。一个例子是在一个包含5000个节点的集群中使用 NodePort Service，如果我们有2000个服务，每个服务有10个 pods，这将导致每个工作节点上至少有20000个 iptable 记录，这会使内核非常繁忙。</p>
+</blockquote>
+</li>
+<li><p>iptables使用的负载均衡算法简单，不支持复杂场景。相反，ipvs能够支持更多的负载均衡算法，且性能更好</p>
+</li>
+</ol>
+<p>另外，基于eBPF技术实现的CNI插件cilium可以完全替换kube-proxy，感兴趣的同学可以试一下。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/k8s-service-account/" rel="prev" title="在 Pod 中，访问 Kubernetes API 接口，并控制访问权限">
+                  <i class="fa fa-angle-left"></i> 在 Pod 中，访问 Kubernetes API 接口，并控制访问权限
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/grpc-retry-in-rust/" rel="next" title="在Rust中实现gRPC重试">
+                  在Rust中实现gRPC重试 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CITAHub</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">43k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">2:38</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://unpkg.com/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/pangu@4.0.7/dist/browser/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  <script src="https://unpkg.com/hexo-generator-searchdb@1.4.1/dist/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

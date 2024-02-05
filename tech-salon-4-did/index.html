@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"cita-cloud.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="洁洁： 我来分享个简单点的 洁洁： 就是did 洁洁： 分布式数字身份的英文缩写 洁洁： 拥有分布式身份不止是人，包括组织，甚至未来也包括物品。这些人或者组织、物品不简单依靠于原先中心化权威机构，无法被拿走或者删除，而且是终身携带的身份。 洁洁： 国际电子技术委员会将“身份”定义为“一组与实体关联的属性”。数字身份通常由身份标识符及与之关联的属性声明来表示，分布式数字身份包括：分布式数字身份标识符">
+<meta property="og:type" content="article">
+<meta property="og:title" content="技术沙龙第四期-分布式身份">
+<meta property="og:url" content="https://cita-cloud.github.io/tech-salon-4-did/index.html">
+<meta property="og:site_name" content="CITAHub技术团队">
+<meta property="og:description" content="洁洁： 我来分享个简单点的 洁洁： 就是did 洁洁： 分布式数字身份的英文缩写 洁洁： 拥有分布式身份不止是人，包括组织，甚至未来也包括物品。这些人或者组织、物品不简单依靠于原先中心化权威机构，无法被拿走或者删除，而且是终身携带的身份。 洁洁： 国际电子技术委员会将“身份”定义为“一组与实体关联的属性”。数字身份通常由身份标识符及与之关联的属性声明来表示，分布式数字身份包括：分布式数字身份标识符">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-4-did/did.png">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-4-did/example.png">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-4-did/did-sepc.png">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-4-did/scheme.png">
+<meta property="article:published_time" content="2021-11-20T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-11-20T16:00:00.000Z">
+<meta property="article:author" content="CITAHub">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cita-cloud.github.io/tech-salon-4-did/did.png">
+
+
+<link rel="canonical" href="https://cita-cloud.github.io/tech-salon-4-did/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://cita-cloud.github.io/tech-salon-4-did/","path":"tech-salon-4-did/","title":"技术沙龙第四期-分布式身份"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>技术沙龙第四期-分布式身份 | CITAHub技术团队</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">CITAHub技术团队</p>
+      <i class="logo-line"></i>
+    </a>
+      <img class="custom-logo-image" src="/uploads/citahub.jpg" alt="CITAHub技术团队">
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-overview-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CITAHub</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/citahub" title="CITAHub仓库 → https:&#x2F;&#x2F;github.com&#x2F;citahub" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITAHub仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/cita-cloud" title="CITA-Cloud仓库 → https:&#x2F;&#x2F;github.com&#x2F;cita-cloud" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITA-Cloud仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:contact@rivtower.com" title="E-Mail → mailto:contact@rivtower.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://talk.citahub.com/" title="论坛 → https:&#x2F;&#x2F;talk.citahub.com" rel="noopener me" target="_blank"><i class="fab fa-stack-overflow fa-fw"></i>论坛</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://docs.citahub.com/zh-CN/welcome" title="CITAHub文档 → https:&#x2F;&#x2F;docs.citahub.com&#x2F;zh-CN&#x2F;welcome" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITAHub文档</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://cita-cloud-docs.readthedocs.io/zh_CN/latest/" title="CITA-Cloud文档 → https:&#x2F;&#x2F;cita-cloud-docs.readthedocs.io&#x2F;zh_CN&#x2F;latest&#x2F;" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITA-Cloud文档</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cita-cloud.github.io/tech-salon-4-did/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CITAHub">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="技术沙龙第四期-分布式身份 | CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          技术沙龙第四期-分布式身份
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-11-21 00:00:00" itemprop="dateCreated datePublished" datetime="2021-11-21T00:00:00+08:00">2021-11-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/" itemprop="url" rel="index"><span itemprop="name">区块链</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>1.2k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>4 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>洁洁：</p>
+<p>我来分享个简单点的</p>
+<p>洁洁：</p>
+<p>就是did</p>
+<p>洁洁：</p>
+<p>分布式数字身份的英文缩写</p>
+<p>洁洁：</p>
+<p>拥有分布式身份不止是人，包括组织，甚至未来也包括物品。这些人或者组织、物品不简单依靠于原先中心化权威机构，无法被拿走或者删除，而且是终身携带的身份。</p>
+<p>洁洁：</p>
+<p>国际电子技术委员会将“身份”定义为“一组与实体关联的属性”。数字身份通常由身份标识符及与之关联的属性声明来表示，分布式数字身份包括：分布式数字身份标识符和数字身份凭证（声明集合）两部分。</p>
+<p>洁洁：</p>
+<p>分布式数字身份标识符（DID）是由字符串组成的标识符，用来代表一个数字身份，不需要中央注册机构就可以实现全球唯一性。通常，一个实体可以拥有多个身份，每个身份被分配唯一的DID值，以及与之关联的非对称密钥。不同的身份之间没有关联信息，从而有效地避免了所有者身份信息的归集。</p>
+<p>洁洁：</p>
+<p>所以每个人都可以拥有多个did</p>
+<p>洁洁：</p>
+<p>比如这样，不同身份不同did</p>
+<p><img src="/tech-salon-4-did/did.png"></p>
+<p>洁洁：</p>
+<p>“声明（claims）”是指与身份关联的属性信息，这个术语起源于基于声明的数字身份，一种断言（assert）数字身份的方式，独立于任何需要依赖它的特定系统。声明信息通常包括：诸如姓名，电子邮件地址、年龄、职业等。</p>
+<p>声明可以是一个身份所有者（如个人或组织）自己发出的，也可以是由其他声明发行人发出的，当声明由发行人签出时被称为可验证声明。用户将声明提交给相关的应用，应用程序对其进行检查，应用服务商可以像信任发行人般信任其签署的可验证声明。多项声明的集合称为凭证（credentials）。</p>
+<p>洁洁：</p>
+<p>这种身份和传统的帐号有啥区别？</p>
+<p>洁洁：</p>
+<p>这种身份最大的好处是可以证明某个东西是我发的</p>
+<p>洁洁：</p>
+<p>传统身份可以被盗用，可以根据系统漏洞被仿冒…甚至dba直接往数据库插句话，你都没法否认</p>
+<p>洁洁：</p>
+<p>did只要守住自己的私钥，没有对内容签名。全网都可以轻松验假</p>
+<p>洁洁：</p>
+<p>did是怎么做到的呢？</p>
+<p>洁洁：</p>
+<p>其实很简单。 did生成的时候会生成一个document们的放在区块链上。这个document当中,就有这个身份的公钥。</p>
+<p>洁洁：</p>
+<p>所以每次发言的时候，把发言内容用私钥签个名一起发出去。</p>
+<p>洁洁：</p>
+<p>别人就可以轻松认定，这句话是你发出的。</p>
+<p>洁洁：</p>
+<p>其他人没有私钥是没办法轻松完成这个签名动作。哪怕是dba他也做不到。</p>
+<p>洁洁：</p>
+<p>所以在区块链的网络当中，私钥是不比当初常规系统中密码更加重要的东西。</p>
+<p>洁洁：</p>
+<p>现在基于这种特性，最成熟的应用是可验证声明，简称vc</p>
+<p>洁洁：</p>
+<p>可验证声明(Verifiable Credential)提供了一种规范来描述实体所具有的某些属性，实现基于证据的信任。DID持有者，可以通过可验证声明，向其他实体(个人、组织、具体事物等)证明自己的某些属性是可信的。同时，结合数字签名和零知识证明等密码学技术，可以使得声明更加安全可信，并进一步保障用户隐私不被侵犯。</p>
+<p>洁洁：</p>
+<p>这是一张大致示意图</p>
+<p><img src="/tech-salon-4-did/example.png"></p>
+<p>洁洁：</p>
+<p>像现在的绿码应用，其实是很容易钻空子</p>
+<p>洁洁：</p>
+<p>用上vc就可以轻松解决这些问题</p>
+<p>洁洁：</p>
+<p>目前w3c对这种身份做了定义</p>
+<p>洁洁：</p>
+<p>分散标识符(DID)是一种新型的标识符，它是全局惟一的、可解析的、高可用性的，并且可以通过密码验证。DID通常与加密材料(如公钥和服务端点)相关联，用于建立安全的通信通道。DID对于任何有利于自我管理、加密可验证标识符(如个人标识符、组织标识符和物联网场景中的标识符)的应用程序都非常有用。例如，目前W3C可验证凭据的商业部署大量使用分散的标识符来标识人员、组织和事物，并实现许多安全和隐私保护保证。</p>
+<p><img src="/tech-salon-4-did/did-sepc.png"></p>
+<p>洁洁：</p>
+<p>最后给大家看看did标识的结构是什么样的</p>
+<p><img src="/tech-salon-4-did/scheme.png"></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/tech-salon-4-cross-chain/" rel="prev" title="技术沙龙第四期-跨链">
+                  <i class="fa fa-angle-left"></i> 技术沙龙第四期-跨链
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/tech-salon-5/" rel="next" title="技术沙龙第五期">
+                  技术沙龙第五期 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CITAHub</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">43k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">2:38</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://unpkg.com/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/pangu@4.0.7/dist/browser/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  <script src="https://unpkg.com/hexo-generator-searchdb@1.4.1/dist/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

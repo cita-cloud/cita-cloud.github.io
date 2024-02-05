@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"cita-cloud.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="绚磊： 做一个简单的开发过程中遇到的使用Mybatis plus更新统计数据，存在线程安全问题，也是分布式事务问题的分享吧。[呲牙] 绚磊： 前提：在我们开发中常常会遇到统计需求。例如，针对一个文件的查看次数的统计。统计的逻辑，挺简单就是数据库数据自增。在我们的系统中，现在大部分使用的ORM框架是Mybatis plus。Mybatis plus的特点是，将对数据库操作的sql封装成java程序员">
+<meta property="og:type" content="article">
+<meta property="og:title" content="技术沙龙第九期">
+<meta property="og:url" content="https://cita-cloud.github.io/tech-salon-9/index.html">
+<meta property="og:site_name" content="CITAHub技术团队">
+<meta property="og:description" content="绚磊： 做一个简单的开发过程中遇到的使用Mybatis plus更新统计数据，存在线程安全问题，也是分布式事务问题的分享吧。[呲牙] 绚磊： 前提：在我们开发中常常会遇到统计需求。例如，针对一个文件的查看次数的统计。统计的逻辑，挺简单就是数据库数据自增。在我们的系统中，现在大部分使用的ORM框架是Mybatis plus。Mybatis plus的特点是，将对数据库操作的sql封装成java程序员">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/1.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/9.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/3.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/4.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/5.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/6.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/7.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/8.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/10.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/11.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/12.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/13.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/14.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/15.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/16.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/17.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/18.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/19.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/20.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/21.jpeg">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-9/22.jpeg">
+<meta property="article:published_time" content="2022-02-13T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-02-13T16:00:00.000Z">
+<meta property="article:author" content="CITAHub">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cita-cloud.github.io/tech-salon-9/1.jpeg">
+
+
+<link rel="canonical" href="https://cita-cloud.github.io/tech-salon-9/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://cita-cloud.github.io/tech-salon-9/","path":"tech-salon-9/","title":"技术沙龙第九期"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>技术沙龙第九期 | CITAHub技术团队</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">CITAHub技术团队</p>
+      <i class="logo-line"></i>
+    </a>
+      <img class="custom-logo-image" src="/uploads/citahub.jpg" alt="CITAHub技术团队">
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-overview-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CITAHub</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/citahub" title="CITAHub仓库 → https:&#x2F;&#x2F;github.com&#x2F;citahub" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITAHub仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/cita-cloud" title="CITA-Cloud仓库 → https:&#x2F;&#x2F;github.com&#x2F;cita-cloud" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITA-Cloud仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:contact@rivtower.com" title="E-Mail → mailto:contact@rivtower.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://talk.citahub.com/" title="论坛 → https:&#x2F;&#x2F;talk.citahub.com" rel="noopener me" target="_blank"><i class="fab fa-stack-overflow fa-fw"></i>论坛</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://docs.citahub.com/zh-CN/welcome" title="CITAHub文档 → https:&#x2F;&#x2F;docs.citahub.com&#x2F;zh-CN&#x2F;welcome" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITAHub文档</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://cita-cloud-docs.readthedocs.io/zh_CN/latest/" title="CITA-Cloud文档 → https:&#x2F;&#x2F;cita-cloud-docs.readthedocs.io&#x2F;zh_CN&#x2F;latest&#x2F;" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITA-Cloud文档</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cita-cloud.github.io/tech-salon-9/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CITAHub">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="技术沙龙第九期 | CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          技术沙龙第九期
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2022-02-14 00:00:00" itemprop="dateCreated datePublished" datetime="2022-02-14T00:00:00+08:00">2022-02-14</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>2k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>7 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>绚磊：</p>
+<p>做一个简单的开发过程中遇到的使用Mybatis plus更新统计数据，存在线程安全问题，也是分布式事务问题的分享吧。[呲牙]</p>
+<p>绚磊：</p>
+<p>前提：<br>在我们开发中常常会遇到统计需求。例如，针对一个文件的查看次数的统计。统计的逻辑，挺简单就是数据库数据自增。<br>在我们的系统中，现在大部分使用的ORM框架是Mybatis plus。Mybatis plus的特点是，将对数据库操作的sql封装成java<br>程序员熟悉的class对象方法。<br>通过Mybatis plus来对 数据库自增往往会有如下的操作。</p>
+<p>绚磊：</p>
+<p>假设数据存在t_file表，创建File对象如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">@Data</span><br><span class="line">@TableName(&quot;t_file&quot;)</span><br><span class="line">@AllArgsConstructor</span><br><span class="line">@NoArgsConstructor</span><br><span class="line">public class File &#123;</span><br><span class="line"></span><br><span class="line">    private Integer id;</span><br><span class="line"></span><br><span class="line">    private String filename;</span><br><span class="line"></span><br><span class="line">    private Integer times;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>绚磊：</p>
+<p>生成Mybatis plus的 mapper 接口类</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">@Mapper</span><br><span class="line">public interface FileMapper extends BaseMapper&lt;File&gt; &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>绚磊：</p>
+<p>生成service层对象类</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">@Service</span><br><span class="line">public class FileServiceImpl extends ServiceImpl&lt;FileMapper, File&gt; implements FileService &#123;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public Integer increase()&#123;</span><br><span class="line">        //获取 文件 在数据库存储的信息</span><br><span class="line">        File file = this.baseMapper.selectById(1);</span><br><span class="line">        Integer times = file.getTimes();</span><br><span class="line">        //对文件的获取次数进行 增加 1 次</span><br><span class="line">        file.setTimes(file.getTimes() 1);</span><br><span class="line">        //更新数据库数据</span><br><span class="line">        this.baseMapper.updateById(file);</span><br><span class="line">        //返回增加后的获取次数</span><br><span class="line">        return file.getTimes();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>绚磊：</p>
+<p>咋一看可能没发现问题，通过简单的单个请求测试也会发现功能正常。但实际上，大量请求并发执行时，会造成统计数据小于实际请求数据量。</p>
+<p>绚磊：</p>
+<p>下面进行下问题复现吧，我这边新建了一个测试项目。</p>
+<p>绚磊：</p>
+<p><img src="/tech-salon-9/1.jpeg"></p>
+<p><img src="/tech-salon-9/9.jpeg"></p>
+<p>启动项目，打上断点 。断点挂在 Thread线程上</p>
+<p>绚磊：</p>
+<p><img src="/tech-salon-9/3.jpeg"></p>
+<p>表里 初始数据</p>
+<p>绚磊：</p>
+<p><img src="/tech-salon-9/4.jpeg"></p>
+<p>从浏览器发送 两次请求</p>
+<p>绚磊：</p>
+<p><img src="/tech-salon-9/5.jpeg"></p>
+<p>可以看到 两个请求进来了。</p>
+<p>绚磊：</p>
+<p><img src="/tech-salon-9/6.jpeg"></p>
+<p><img src="/tech-salon-9/7.jpeg"></p>
+<p>后续的结果很明显了，http-nio-7777-exec-1和http-nio-7777-exec-2获取到的 id&#x3D;1 的times 都是0</p>
+<p><img src="/tech-salon-9/8.jpeg"></p>
+<p>绚磊：</p>
+<p>后续进行了 times&#x3D; times 1，然后更新表后，会发现虽然进行了两次请求，但实际数据库表里的数据为1次。</p>
+<p>绚磊：</p>
+<p>整理下逻辑：</p>
+<p>绚磊：</p>
+<p>1.当A请求，请求到服务器，开启线程1执行 File file &#x3D; this.baseMapper.selectById(1);语句完成后，进入阻塞，此时file.getTimes() 的值为 0。<br>2.此时B请求，请求到服务器，开启线程2，也执行到File file &#x3D; this.baseMapper.selectById(1);语句完成后，进入阻塞，此时file.getTimes() 的值也为 0。<br>3.此时可以明显发现问题出现了<br>4.后续A请求，B请求无论哪个先执行完，更新到数据库中的file.times 的 值 只会是1 【但请求数是2】</p>
+<p>绚磊：</p>
+<p>接下详细分析出现问题的原因：</p>
+<p>绚磊：</p>
+<p>这是一个很明显的线程安全问题，多个线程操作同一个资源。此外，由于这是对数据库记录的操作，这也涉及到数据库的事务，事务隔离级别，我们发现上面的代码，没有使用到数据库事务，<br>那么是否有可能加上事务就会解决问题了呢，这里先把结论说出来吧，实际上加上事务也是会存在问题的。总结下，上面线程安全问题的原因是，多线程通过了一系列非原子性的操作，修改了<br>相同的资源。接下来我们分下下数据库层面，默认情况下，MySQL。默认情况下，MySQL 的 innodb数据引擎的事务隔离级别是 RR，也就是Repeatable Read，<br>rr的原理是 MVCC多版本并发控制 悲观锁 乐观锁。从数据库事务角度分析上面问题，其实是事务A通过select * from file 获取到的对象 file id &#x3D;1; name&#x3D;”file”,times&#x3D;1【这是一个快照snapshot】。<br>事务B 获取到的也是一个快照，获取到的也是 file.times &#x3D; 1。所以也最终导致了最后 统计数据 小于 实际请求数量。</p>
+<p>绚磊：</p>
+<p>说了这么多，还没说解决方法。接下去说说几种解决方法，根据问题分析得出造成问题的原因有两点：1.多线程 2.非原子性操作。<br>那么可以从两个维度来解决问题：1.对多线程操作的方法加锁 2.将操作修改成 原子性操作。<br>先说说第一个维度的几个方案，加锁：分别从数据库，java单个应用，分布式多个应用做出方案。<br>首先由于这个场景是针对数据库的数据做统计自增操作，上面也分析了，也有数据库事务隔离级别的影响，那么是否能考虑将事务隔离级别调整下，原本默认是REPEATABLE_READ，调整成SERIALIZABLE。然后测试下看。</p>
+<p>绚磊：</p>
+<p>修改 FileServiceImpl类</p>
+<p><img src="/tech-salon-9/10.jpeg"></p>
+<p>绚磊：</p>
+<p>测试结果，两个请求获取到的仍然是0</p>
+<p><img src="/tech-salon-9/11.jpeg"></p>
+<p>绚磊：</p>
+<p>第一个请求，update数据库成功，第二个请求，报死锁错误。</p>
+<p><img src="/tech-salon-9/12.jpeg"></p>
+<p>绚磊：</p>
+<p>这里可能涉及到 mysql 锁机制，后续我再测试分析下。</p>
+<p>绚磊：</p>
+<p>总结此方法：能实现数据的安全。但是只能有成功一个请求，实际编码中不推荐此方法。</p>
+<p>绚磊：</p>
+<p>第二个方案：加synchronized 或者 ReentrantLock 来解决，多线程问题。</p>
+<p>绚磊：</p>
+<p>修改Service类</p>
+<p><img src="/tech-salon-9/13.jpeg"></p>
+<p>绚磊：</p>
+<p>测试打上断点，两个请求并发执行，会发现第一个请求进入了断点，第二个请求没有进入断点，但是浏览器上第二个请求阻塞了。</p>
+<p><img src="/tech-salon-9/14.jpeg"></p>
+<p>绚磊：</p>
+<p>最后的执行结果：正确</p>
+<p><img src="/tech-salon-9/15.jpeg"></p>
+<p><img src="/tech-salon-9/16.jpeg"></p>
+<p>绚磊：</p>
+<p>但是 此方法：仅适用于单节点应用，现在基本上都是前后端分离的分布式系统。可以想象下，启动多个节点服务，此时两个请求分别打在两个服务上。实际上并不存在，线程竞争。此时问题变成了，分布式事务问题。</p>
+<p>绚磊：</p>
+<p>所以 就有个第三个方案：方案加分布式锁，例如利用redis加分布式锁。这里就不演示了，此方法肯定是可行的，但是增加了逻辑上的复杂度，带来了分布式锁的加锁和解锁问题，还涉及到等待请求的公平与非公平。</p>
+<p>绚磊：</p>
+<p>最后 思考下，是否还有其他方案呢，其实从原子性操作角度分析，由于我们在进行自增操作的时候是先获取了数据库的值，然后再进行java逻辑层的自增，再更新到mysql数据库中。这样获取值和更新不是一个原子操作。通过自定义 sql 。 不使用mybatis plus提供的方法，来做操作 。这样就能保证自增的原子性了。</p>
+<p>绚磊：</p>
+<p><img src="/tech-salon-9/17.jpeg"></p>
+<p>修改方法为：</p>
+<p><img src="/tech-salon-9/18.jpeg"></p>
+<p>绚磊：</p>
+<p>测试结果：</p>
+<p><img src="/tech-salon-9/19.jpeg"></p>
+<p><img src="/tech-salon-9/20.jpeg"></p>
+<p>绚磊：</p>
+<p>分析：有同学可能会问，两个事务下线程A和线程B同时阻塞在，update操作；然后线程A先commit，接着线程B再commit，是否会有问题。</p>
+<p>由于update 在本身就是X锁排他锁，线程A，线程B并发执行，只有一个线程能获取到锁。假设线程B获取到锁，那么线程A就进入等待。</p>
+<p>线程B执行完 update 语句后，但是未提交，生成一条redo log；</p>
+<p>线程A执行完 update 语句后，但是未提交，生成一条redo log；</p>
+<p>通过sql可以查询到获取锁的sql</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT * FROM performance_schema.events_statements_history WHERE thread_id IN(</span><br><span class="line">SELECT b.`THREAD_ID` FROM sys.`innodb_lock_waits` AS a , performance_schema.threads AS b</span><br><span class="line">WHERE a.`blocking_pid` = b.`PROCESSLIST_ID`)</span><br></pre></td></tr></table></figure>
+
+<p><img src="/tech-salon-9/21.jpeg"></p>
+<p>绚磊：</p>
+<ul>
+<li><p>此时执行select times from t_vc where id&#x3D;5 for update;会阻塞。因为在采用INNODB的MySQL中，更新操作默认会加行级锁.所以窗口二这里会卡住。</p>
+</li>
+<li><p>然后线程A commit，释放锁；线程Bcommit，释放锁。</p>
+</li>
+</ul>
+<p>绚磊：</p>
+<p>从执行日志看：</p>
+<p><img src="/tech-salon-9/22.jpeg"></p>
+<p>绚磊：</p>
+<p>先后执行了更新操作。</p>
+<p>绚磊：</p>
+<p>最后总结下： 通过自定义sql update table set a&#x3D;a 1 where id&#x3D;1 来解决 统计数据的自增问题，最为合适</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/tech-salon-8-aop/" rel="prev" title="技术沙龙第八期-AOP">
+                  <i class="fa fa-angle-left"></i> 技术沙龙第八期-AOP
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/cloud-init-quickstart/" rel="next" title="技术沙龙第十期-cloud-init快速开始">
+                  技术沙龙第十期-cloud-init快速开始 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CITAHub</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">43k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">2:38</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://unpkg.com/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/pangu@4.0.7/dist/browser/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  <script src="https://unpkg.com/hexo-generator-searchdb@1.4.1/dist/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

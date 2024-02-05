@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"cita-cloud.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="问题描述现在，在我们的工作环境中，以笔记本为办公平台，在其上完成例如 编码、远程、文档处理 等等工作。对于其他数据资源，则保存在远程文件托管服务（例如 NAS 或 云盘服务 等等）中，通过网络进行远程访问及数据备份。 但是，该方案的最大问题是我们无法保证网络总是可用或高速，在某些特殊工作环境中，或无法访问网络，或网络速度受限，或网络质量不稳定，导致我们无法访问远程文件托管服务中的资源。 所以，我们">
+<meta property="og:type" content="article">
+<meta property="og:title" content="可移动数据中心的构想与实现">
+<meta property="og:url" content="https://cita-cloud.github.io/edge-dc/index.html">
+<meta property="og:site_name" content="CITAHub技术团队">
+<meta property="og:description" content="问题描述现在，在我们的工作环境中，以笔记本为办公平台，在其上完成例如 编码、远程、文档处理 等等工作。对于其他数据资源，则保存在远程文件托管服务（例如 NAS 或 云盘服务 等等）中，通过网络进行远程访问及数据备份。 但是，该方案的最大问题是我们无法保证网络总是可用或高速，在某些特殊工作环境中，或无法访问网络，或网络速度受限，或网络质量不稳定，导致我们无法访问远程文件托管服务中的资源。 所以，我们">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cita-cloud.github.io/edge-dc/pasted_image.png">
+<meta property="og:image" content="https://cita-cloud.github.io/edge-dc/pasted_image001.png">
+<meta property="og:image" content="https://cita-cloud.github.io/edge-dc/pasted_image002.png">
+<meta property="article:published_time" content="2022-04-28T07:25:38.000Z">
+<meta property="article:modified_time" content="2022-04-28T07:25:38.000Z">
+<meta property="article:author" content="CITAHub">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cita-cloud.github.io/edge-dc/pasted_image.png">
+
+
+<link rel="canonical" href="https://cita-cloud.github.io/edge-dc/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://cita-cloud.github.io/edge-dc/","path":"edge-dc/","title":"可移动数据中心的构想与实现"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>可移动数据中心的构想与实现 | CITAHub技术团队</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">CITAHub技术团队</p>
+      <i class="logo-line"></i>
+    </a>
+      <img class="custom-logo-image" src="/uploads/citahub.jpg" alt="CITAHub技术团队">
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E6%8F%8F%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">问题描述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">2.</span> <span class="nav-text">解决方案</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A6%96%E4%B8%AA%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.</span> <span class="nav-text">首个实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AD%A5%E3%80%81%E5%88%9B%E5%BB%BA-OpenWrt-%E5%AE%9E%E4%BE%8B"><span class="nav-number">3.1.</span> <span class="nav-text">第一步、创建 OpenWrt 实例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E6%AD%A5%E3%80%81%E9%85%8D%E7%BD%AE-OpenWrt-%E6%9C%8D%E5%8A%A1"><span class="nav-number">3.2.</span> <span class="nav-text">第二步、配置 OpenWrt 服务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E6%AD%A5%E3%80%81%E9%85%8D%E7%BD%AE-Linux-Guest-%E5%AE%9E%E4%BE%8B"><span class="nav-number">3.3.</span> <span class="nav-text">第三步、配置 Linux Guest 实例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%8E%E7%BB%AD%E7%9A%84%E6%94%B9%E8%BF%9B%E5%B7%A5%E4%BD%9C"><span class="nav-number">3.4.</span> <span class="nav-text">后续的改进工作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%94%B9%E8%BF%9B%E5%B7%A5%E4%BD%9C%E7%9A%84%E6%8E%A8%E8%BF%9B"><span class="nav-number">3.5.</span> <span class="nav-text">改进工作的推进</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%8E%E5%BB%89%E7%9A%84%E5%88%86%E5%B8%83%E5%BC%8F%E6%95%B0%E6%8D%AE%E4%B8%AD%E5%BF%83"><span class="nav-number">4.</span> <span class="nav-text">低廉的分布式数据中心</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CITAHub</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/citahub" title="CITAHub仓库 → https:&#x2F;&#x2F;github.com&#x2F;citahub" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITAHub仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/cita-cloud" title="CITA-Cloud仓库 → https:&#x2F;&#x2F;github.com&#x2F;cita-cloud" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITA-Cloud仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:contact@rivtower.com" title="E-Mail → mailto:contact@rivtower.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://talk.citahub.com/" title="论坛 → https:&#x2F;&#x2F;talk.citahub.com" rel="noopener me" target="_blank"><i class="fab fa-stack-overflow fa-fw"></i>论坛</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://docs.citahub.com/zh-CN/welcome" title="CITAHub文档 → https:&#x2F;&#x2F;docs.citahub.com&#x2F;zh-CN&#x2F;welcome" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITAHub文档</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://cita-cloud-docs.readthedocs.io/zh_CN/latest/" title="CITA-Cloud文档 → https:&#x2F;&#x2F;cita-cloud-docs.readthedocs.io&#x2F;zh_CN&#x2F;latest&#x2F;" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITA-Cloud文档</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cita-cloud.github.io/edge-dc/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CITAHub">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="可移动数据中心的构想与实现 | CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          可移动数据中心的构想与实现
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2022-04-28 15:25:38" itemprop="dateCreated datePublished" datetime="2022-04-28T15:25:38+08:00">2022-04-28</time>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>2.5k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>9 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>现在，在我们的工作环境中，以笔记本为办公平台，在其上完成例如 编码、远程、文档处理 等等工作。对于其他数据资源，则保存在远程文件托管服务（例如 NAS 或 云盘服务 等等）中，通过网络进行远程访问及数据备份。</p>
+<p>但是，该方案的最大问题是我们无法保证网络总是可用或高速，在某些特殊工作环境中，或无法访问网络，或网络速度受限，或网络质量不稳定，导致我们无法访问远程文件托管服务中的资源。</p>
+<p>所以，我们尝试将经常访问的__数据资源本地化__，即将常用访问的数据直接保存在笔记本电脑上，并在其上运行__备份服务__以将我们的数据备份到远程文件托管服务。鉴于此，即使网络资源成为瓶颈，也不会影响我们对数据资源的访问，而远程文件托管服务则作为 <strong>极低频访问资源的存储</strong> 及 <strong>笔记本数据备份的后端存储</strong> 而存在。</p>
+<p>但是，随着办公平台的扩大，我们平时不得不以 Linux 系统为主要办公环境，但是有的时候会用到 Windows 系统，尤其是需要运行仅支持 Windows 平台的软件（例如 企业微信、钉钉、微信 等等）。我们尝试更换 Macbook，但并不能解决问题；两个笔记本，携带也不方便；通过 Wine 方案，仅能解决部分软件的运行问题，仍旧存在部分软件无法通过 Wine 来运行。</p>
+<p>所以，我们尝试在虚拟机中运行操作系统，将我们的办公环境迁移到虚拟机。我们在宿主机中运行 Linux 操作系统，并在其中部署桌面虚拟化（例如 VirtualBox 等等），并在虚拟机中运行 Windows 操作系统。同时，借助虚拟机的 Guest Additions 组件，实现宿主机与虚拟机之间互操作（例如 文件共享、复制粘贴 等等）</p>
+<p>但是，很多时候两个操作系统（Windows&#x2F;Linux）都要使用相同的服务。例如：或为了提供网络质量，两个操作系统都需要使用网络加速服务；或为了访问办公网络，两个操作系统都要接入企业 VPN 服务；</p>
+<p>所以，我们开始思考，既然虚拟机的流量是通过 NAT 进行网络访问，那能不能在虚拟化中运行路由器操作系统，然后所有的虚拟机操作系统将数据包发往路由器操作系统，而路由器操作系统的其他接口负责将数据包发送到外部网络。这样的网络模型就更加贴近于现实环境的终端网络，事情也变得越来越疯狂。</p>
+<p>关键词：可移动数据中心、边缘数据中心、便携式数据中心、虚拟数据中心</p>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>根据我们的想法进行描绘，整个系统原型类似如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">+-------------------------------------------------+</span><br><span class="line">|   OpenWrt   | Windows VM | Linux VM |    ...    |</span><br><span class="line">+-------------------------------------------------+</span><br><span class="line">|   LINUX + KVM + Storage                         |</span><br><span class="line">+-------------------------------------------------+</span><br><span class="line">|                     LAPTOP                      |</span><br><span class="line">+-------------------------------------------------+</span><br></pre></td></tr></table></figure>
+
+<p><strong>LAPTOP</strong>：最底层是笔记本物理硬件本身，所有的环境将运行在其上。这其中既有配电设施，又有冷却设施，运维管理中心则为本机。至于机柜和布线系统，鉴于整个系统的基于多种虚拟化技术实现，所以完全不需要机柜和布线系统。</p>
+<p><strong>LINUX + KVM + Storage</strong>：向上则是虚拟化环境，运行 Linux 操作系统，并在其中部署 KVM 虚拟化，最后将物理存储加入到 KVM 虚拟化的存储池中，以向上层虚拟机提供存储服务。</p>
+<p><strong>OpenWrt</strong>：作为虚拟机访问外部网络的网关，所有虚拟机流量将通过 OpenWrt 路由到外部网络。对于 KVM 环境，运行 <a target="_blank" rel="noopener" href="https://openwrt.org/docs/guide-user/virtualization/qemu">OpenWrt in QEMU</a> 路由，网络加速也在 OpenWrt 中实现，通过全局流量检查来同时实现Linux 和 Windows 的网络加速，如此便无需在两个系统中安装客户端。</p>
+<p><strong>Windows VM、Linux VM</strong>：作为实际我们办公的操作系统，且所有虚拟机网卡与 OpenWrt 网卡位于相同的二层网络，所有的虚拟机流量将发送到 OpenWrt，并由 OpenWrt 的另张网卡发送到外部网络。</p>
+<p><strong>虚拟机的数据共享</strong>：鉴于多个虚拟机间的很多数据、文件、程序是需要共享的，我们通过用 NFS 或 CIFS 来实现。但是存储还是落在主机上，所以需要使用 KVM 隔离网络来允许虚拟机访问宿主机，这导致但个虚拟机至少有两块网卡。</p>
+<p><strong>虚拟机的桌面访问</strong>：宿主机具备图形化桌面，我们使用 virt-manager 对 KVM 虚拟机进行管理及桌面访问，对于虚拟机间的复制粘贴，通过 SPICE Agent 能够解决。</p>
+<p>如此，我们便能将数据中心装在包里，随身携带。硬件配置要求，取决于个人工作负载，我们平时运行 Linux 及相关的应用就要 16G 的内存，主要是应用程序开的多。</p>
+<h2 id="首个实现"><a href="#首个实现" class="headerlink" title="首个实现"></a>首个实现</h2><p>我们已实现该技术方案的首个版本，但是多少有些出入（但差别并不大）：</p>
+<p><img src="/edge-dc/pasted_image.png"></p>
+<p>共 4 层（从上到下，L4、L3、L2、L1）</p>
+<p>虚拟化选用 VirtalBox 的原因是：<br>1）鉴于是移动数据中心，所以涉及桌面环境事件响应（例如 休眠处理 等等），而桌面虚拟化软件处理的更好；<br>2）VritualBox 免费；</p>
+<p>鉴于虚拟化（L2）及物理层（L1）暂无特殊配置，所以不再详细说明。该部分的后续内容将概述网络层（L3）与客户机层（L4）的实现，及相关问题处理。</p>
+<h3 id="第一步、创建-OpenWrt-实例"><a href="#第一步、创建-OpenWrt-实例" class="headerlink" title="第一步、创建 OpenWrt 实例"></a>第一步、创建 OpenWrt 实例</h3><p>在 VirtualBox 中，部署 OpenWrt 服务：参考 <a target="_blank" rel="noopener" href="https://openwrt.org/docs/guide-user/virtualization/virtualbox-vm%20">[OpenWrt Wiki] OpenWrt on VirtualBox HowTo</a> 文档，获取官方配置说明。</p>
+<p>我们需要三张不同网络网络类型的网卡（尽量依序创建）：<br>1）NAT：负责网络访问，否则 OpoenWrt 将无法上网；（相当于 WAN 接口）<br>2）Internal Network：实现 OpenWrt、Linux 的二层互联；（相当于 LAN 接口）<br>3）Host-only Adapter：能与主机通信，用于从主机连接和管理 OpenWrt 服务；</p>
+<h3 id="第二步、配置-OpenWrt-服务"><a href="#第二步、配置-OpenWrt-服务" class="headerlink" title="第二步、配置 OpenWrt 服务"></a>第二步、配置 OpenWrt 服务</h3><p>我们需要配置 OpenWrt 服务，使其成为路由设备：<br><a target="_blank" rel="noopener" href="https://openwrt.org/docs/guide-user/network/openwrt_as_routerdevice%20">[OpenWrt Wiki] OpenWrt as router device</a></p>
+<p>如果遇到问题，或许需要使用 TCPDump 抓包：<br><a target="_blank" rel="noopener" href="https://openwrt.org/docs/guide-user/firewall/misc/tcpdump_wireshark%20">[OpenWrt Wiki] How to capture, filter and inspect packets using tcpdump or wireshark tools</a></p>
+<h3 id="第三步、配置-Linux-Guest-实例"><a href="#第三步、配置-Linux-Guest-实例" class="headerlink" title="第三步、配置 Linux Guest 实例"></a>第三步、配置 Linux Guest 实例</h3><p>创建 Linux Guest 主机，并添加 Internal Network 类型网络，使其与 OpenWrt 二层互联；</p>
+<p>然后，启动 Linux Guest 实例；</p>
+<p>如果配置正确，Linux Guest 能够通过 OpenWrt 的 DHCP 获取 IP 地址；</p>
+<h3 id="后续的改进工作"><a href="#后续的改进工作" class="headerlink" title="后续的改进工作"></a>后续的改进工作</h3><p>首个版本已能够运行，但是还有很多改进工作：</p>
+<p>1）<strong>继续使用 VirtualBox 桌面虚拟化</strong>：KVM 非桌面虚拟化，对桌面场景处理不是很好。比如 当 KVM 休眠恢复后，时间跳跃导致 Guest CPU Usage 飙升；</p>
+<p>2）<strong>替换 Host 系统为 Linux 发行版</strong>：Window 10 + VirtualBox 的问题是，网卡插拔后（间隔久一点），Guest Bridage Network 无法就再也无法访问网络；Linux + VirtualBox 经过测试暂无问题。桥接网络是为了 OpenWrt 与 另个数据中心运行动态路由协议，如果用 NAT Network 就无法运行动态路由协议。另外，笔记本的有线网卡&#x2F;无线网卡可以进行 主&#x2F;备&#x2F;负载。</p>
+<p>3）<strong>引入存储（待定）</strong>：该改进的目的是使得整个模型更加贴近于终端环境，并通过 FCoE 或 iSCSI 的方式提供块存储。但并无必要性，虚拟机的磁盘扩容也是在文件系统上扩容的，没必要引入独立的存储服务。后来（04&#x2F;27&#x2F;2022）我们觉得还是要引入存储服务，为多个 Guest 提供共享的网络文件系统存储，实现文件共享，同时使得整个模型更加贴近于数据中心。</p>
+<h3 id="改进工作的推进"><a href="#改进工作的推进" class="headerlink" title="改进工作的推进"></a>改进工作的推进</h3><p>我们确实对整个模型进行改进</p>
+<p><img src="/edge-dc/pasted_image001.png"></p>
+<p>1）<strong>替换 Host 系统为 Linux 发行版</strong>：Ubuntu 20.04 LTS + VirtualBox 6.1.32</p>
+<p>2）<strong>引入存储</strong>：使用 OpenMediaVault 作为存储，目前主要是将其作为网络文件系统来使用：（1）在多个 Guest 间通过网络分享文件和数据；（2）将数据从 Linux Guest 脱离出来，数据备份工作转移到存储服务层面；</p>
+<p>3）<strong>替换 OpenWrt 组件</strong>：我们引入 pfSense 防火墙，以利用其中的 FRR 模块与 L2TP 模块；</p>
+<h2 id="低廉的分布式数据中心"><a href="#低廉的分布式数据中心" class="headerlink" title="低廉的分布式数据中心"></a>低廉的分布式数据中心</h2><p>为了能从办公室访问家里的网络（我们没有出口路由的控制权），而且是任意访问（我们希望直接访问 80 端口，但是受限于网络环境，80 端口默认被运营商屏蔽），所以我们通过部署 L2TP VPN 解决。通过十分服务器部署 LNS 服务，家里的路由器和笔记都作为 LAC 拨号到 LNS，形成二层网络，我们便能通过内网地址直接访问家里的服务。但缺点也很明显，双端需要配置静态路由，否则网络无法互通。虽然需要静态路由，但也不影响使用。而在思考改进该缺点的时候，我们得到创建分布式的低廉数据中心的灵感。</p>
+<p>我们的目标很简单：利用当前公网架构，将分散在各地理位置的资源集结到一起，形成大型逻辑网络。于是便产生如下拓扑（相关的技术细节不再赘述，该图已披露出关键的技术要点）</p>
+<p><img src="/edge-dc/pasted_image002.png"></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/cert-manager/" rel="prev" title="在 Kubernetes 中，免费 HTTPS 证书（cert-manager）">
+                  <i class="fa fa-angle-left"></i> 在 Kubernetes 中，免费 HTTPS 证书（cert-manager）
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/use-loadbalancer-in-self-built-k8s-cluster/" rel="next" title="在自建Kubernetes集群中创建LoadBalancer">
+                  在自建Kubernetes集群中创建LoadBalancer <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CITAHub</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">43k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">2:38</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://unpkg.com/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/pangu@4.0.7/dist/browser/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  <script src="https://unpkg.com/hexo-generator-searchdb@1.4.1/dist/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

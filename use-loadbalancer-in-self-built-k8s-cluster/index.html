@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"cita-cloud.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="Service的分类在Kubernetes中，经常用到的有这些类型的Service：ClusterIP，NodePort，LoadBalancer ClusterIPClusterIP主要用来集群内应用的互相访问，比如你有个数据库服务暴露了一个名为db-service的Service ，那么你的应用可以使用如下的方式连接： 12# &lt;service&gt;.&lt;namespace&gt;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="在自建Kubernetes集群中创建LoadBalancer">
+<meta property="og:url" content="https://cita-cloud.github.io/use-loadbalancer-in-self-built-k8s-cluster/index.html">
+<meta property="og:site_name" content="CITAHub技术团队">
+<meta property="og:description" content="Service的分类在Kubernetes中，经常用到的有这些类型的Service：ClusterIP，NodePort，LoadBalancer ClusterIPClusterIP主要用来集群内应用的互相访问，比如你有个数据库服务暴露了一个名为db-service的Service ，那么你的应用可以使用如下的方式连接： 12# &lt;service&gt;.&lt;namespace&gt;">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cita-cloud.github.io/use-loadbalancer-in-self-built-k8s-cluster/pending-service.png">
+<meta property="og:image" content="https://cita-cloud.github.io/use-loadbalancer-in-self-built-k8s-cluster/ec2-elb.png">
+<meta property="og:image" content="https://cita-cloud.github.io/use-loadbalancer-in-self-built-k8s-cluster/get-service.png">
+<meta property="og:image" content="https://cita-cloud.github.io/use-loadbalancer-in-self-built-k8s-cluster/des-service.png">
+<meta property="og:image" content="https://cita-cloud.github.io/use-loadbalancer-in-self-built-k8s-cluster/loadbanlance-arch.png">
+<meta property="article:published_time" content="2022-05-09T06:17:50.000Z">
+<meta property="article:modified_time" content="2022-05-09T06:17:50.000Z">
+<meta property="article:author" content="CITAHub">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cita-cloud.github.io/use-loadbalancer-in-self-built-k8s-cluster/pending-service.png">
+
+
+<link rel="canonical" href="https://cita-cloud.github.io/use-loadbalancer-in-self-built-k8s-cluster/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://cita-cloud.github.io/use-loadbalancer-in-self-built-k8s-cluster/","path":"use-loadbalancer-in-self-built-k8s-cluster/","title":"在自建Kubernetes集群中创建LoadBalancer"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>在自建Kubernetes集群中创建LoadBalancer | CITAHub技术团队</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">CITAHub技术团队</p>
+      <i class="logo-line"></i>
+    </a>
+      <img class="custom-logo-image" src="/uploads/citahub.jpg" alt="CITAHub技术团队">
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Service%E7%9A%84%E5%88%86%E7%B1%BB"><span class="nav-number">1.</span> <span class="nav-text">Service的分类</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ClusterIP"><span class="nav-number">1.1.</span> <span class="nav-text">ClusterIP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NodePort"><span class="nav-number">1.2.</span> <span class="nav-text">NodePort</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#LoadBalancer"><span class="nav-number">1.3.</span> <span class="nav-text">LoadBalancer</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Cloud-Provider%E4%B8%8ECloud-Controller-Manager"><span class="nav-number">2.</span> <span class="nav-text">Cloud Provider与Cloud Controller Manager</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#In-tree%E6%96%B9%E5%BC%8F%E7%9A%84Cloud-Provider%E5%88%9D%E5%A7%8B%E5%8C%96%E5%88%86%E6%9E%90"><span class="nav-number">2.1.</span> <span class="nav-text">In-tree方式的Cloud Provider初始化分析</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BALoadBalancer"><span class="nav-number">3.</span> <span class="nav-text">创建LoadBalancer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90"><span class="nav-number">4.</span> <span class="nav-text">源码分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">5.</span> <span class="nav-text">结语</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CITAHub</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/citahub" title="CITAHub仓库 → https:&#x2F;&#x2F;github.com&#x2F;citahub" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITAHub仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/cita-cloud" title="CITA-Cloud仓库 → https:&#x2F;&#x2F;github.com&#x2F;cita-cloud" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITA-Cloud仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:contact@rivtower.com" title="E-Mail → mailto:contact@rivtower.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://talk.citahub.com/" title="论坛 → https:&#x2F;&#x2F;talk.citahub.com" rel="noopener me" target="_blank"><i class="fab fa-stack-overflow fa-fw"></i>论坛</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://docs.citahub.com/zh-CN/welcome" title="CITAHub文档 → https:&#x2F;&#x2F;docs.citahub.com&#x2F;zh-CN&#x2F;welcome" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITAHub文档</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://cita-cloud-docs.readthedocs.io/zh_CN/latest/" title="CITA-Cloud文档 → https:&#x2F;&#x2F;cita-cloud-docs.readthedocs.io&#x2F;zh_CN&#x2F;latest&#x2F;" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITA-Cloud文档</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cita-cloud.github.io/use-loadbalancer-in-self-built-k8s-cluster/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CITAHub">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="在自建Kubernetes集群中创建LoadBalancer | CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          在自建Kubernetes集群中创建LoadBalancer
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2022-05-09 14:17:50" itemprop="dateCreated datePublished" datetime="2022-05-09T14:17:50+08:00">2022-05-09</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Kubernetes/" itemprop="url" rel="index"><span itemprop="name">Kubernetes</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>2.2k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>8 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="Service的分类"><a href="#Service的分类" class="headerlink" title="Service的分类"></a>Service的分类</h2><p>在Kubernetes中，经常用到的有这些类型的Service：ClusterIP，NodePort，LoadBalancer</p>
+<h3 id="ClusterIP"><a href="#ClusterIP" class="headerlink" title="ClusterIP"></a>ClusterIP</h3><p>ClusterIP主要用来集群内应用的互相访问，比如你有个数据库服务暴露了一个名为db-service的Service ，那么你的应用可以使用如下的方式连接：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">&lt;service&gt;.&lt;namespace&gt;:&lt;service-port&gt;</span></span><br><span class="line">spring.datasource.url=jdbc:mysql://db-service.default:3306/test?characterEncoding=utf8&amp;useSSL=true</span><br></pre></td></tr></table></figure>
+
+<h3 id="NodePort"><a href="#NodePort" class="headerlink" title="NodePort"></a>NodePort</h3><p>NodePort为我们给集群外暴露服务提供了一种方式。NodePort顾名思义，这种Service在每个Kubernetes的节点暴露一个Port(默认为30000-32767)。</p>
+<p>注意，这里是每个节点都会暴露一个Port。</p>
+<p>所以，你可以在集群外所用任意节点的IP+Port连接到集群内的服务。</p>
+<p>一般情况下，这种方式只会在测试阶段使用，所以不建议在生产环境中使用NodePort方式对外暴露服务，有如下缺点：</p>
+<ul>
+<li>端口范围有限制，只能是30000-32767 </li>
+<li>直接对外暴露云主机的IP并不安全 </li>
+<li>由于客户端固定使用其中一个云主机实例的IP连接，若该云主机故障，则整个多副本应用都不能对外提供服务，除非自己在客户端层面实现故障检测机制。 </li>
+<li>一些厂商的云主机的公有IP会变，如AWS的EC2，关闭后再重启，可能导致IP不一致</li>
+</ul>
+<h3 id="LoadBalancer"><a href="#LoadBalancer" class="headerlink" title="LoadBalancer"></a>LoadBalancer</h3><p>为解决以上问题，传统云环境下，我们都会用云厂商的LoadBalancer来实现负载均衡和服务的高可用。如：AWS的ELB，阿里云的SLB等。顾名思义，LoadBalancer可以将流量导入后端多个实例，实现请求服务的负载均衡。</p>
+<p>Kubernetes作为云原生时代的基础设施，必然会用到一些公有云资源，如LoadBalancer、云盘等，来适应云环境下的各种场景（当然私有云环境也会有与公有云相对应的资源或服务，这里不在讨论范围）。</p>
+<p>Kubernetes中的LoadBalancer类型的Service为我们创建云上LoadBalancer的服务提供了便利，你可以使用如下配置：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">nginx-service-lb</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">LoadBalancer</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">nginx-net</span></span><br><span class="line">  <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">8080</span></span><br><span class="line">      <span class="attr">targetPort:</span> <span class="number">80</span></span><br></pre></td></tr></table></figure>
+<p>如上，我在我自己的集群上使用了名为nginx-service-lb的LoadBalancer类型的Service来暴露后端的Nginx服务。不过会遇到如下错误状态:<br><img src="/use-loadbalancer-in-self-built-k8s-cluster/pending-service.png"></p>
+<p>可以看到，nginx-service-lb会一直处于pending状态。不过，仔细一想也会知道，我的自建集群并未告知Kubernetes相关云服务的账号信息，怎么会为我们创建对应的云资源呢。</p>
+<h2 id="Cloud-Provider与Cloud-Controller-Manager"><a href="#Cloud-Provider与Cloud-Controller-Manager" class="headerlink" title="Cloud Provider与Cloud Controller Manager"></a>Cloud Provider与Cloud Controller Manager</h2><p>其实，在Kubernetes创建公有云资源，还需要告诉Kubernetes所处于的云环境，Kubernetes把创建云资源的事交给了叫做Cloud Provider或Cloud Controller Manager的组件来做。</p>
+<p>以上提及的组件存在两种形式：</p>
+<ul>
+<li>in-tree方式：Kubernetes v1.6之前的做法，也就是Cloud Provider。该方式各Providers的代码集成在Kubernetes主代码中，各核心组件通过–cloud-provider参数来启动对应的Provider（如AWS&#x2F;Azure&#x2F;GCE等），由于和Kubernetes代码耦合，当前这种方法已被官方弃用。</li>
+<li>out-of-tree方式：需要在集群中安装一个独立组件，也叫Cloud Controller Manager，并通过设置–cloud-provider&#x3D;external的方式来告诉各核心组件通过外部组件来完成云资源的创建和管理，如AWS的 <a target="_blank" rel="noopener" href="https://github.com/kubernetes/cloud-provider-aws">cloud-provider-aws</a> ，阿里云的 <a target="_blank" rel="noopener" href="https://github.com/kubernetes/cloud-provider-alibaba-cloud">cloud-provider-alibaba-cloud</a> ，它们均被托管在Kubernetes官方仓库下。这种方式独立于Kubernetes核心代码的开发、构建和发布，是官方推荐的做法。</li>
+</ul>
+<h3 id="In-tree方式的Cloud-Provider初始化分析"><a href="#In-tree方式的Cloud-Provider初始化分析" class="headerlink" title="In-tree方式的Cloud Provider初始化分析"></a>In-tree方式的Cloud Provider初始化分析</h3><blockquote>
+<p>虽说已弃用，但又不是不能用</p>
+</blockquote>
+<p>现在，我在AWS的EC2实例上自建了Kubernetes集群，并在初始化集群的时候设置–cloud-provider&#x3D;aws参数（in-tree方式，生产环境并不建议用，此处做实验用）来告诉Kubernetes初始化AWS的Provider:</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 你可以使用kubeadm init --config=如下配置来初始化集群</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">kubeadm.k8s.io/v1beta3</span></span><br><span class="line"><span class="attr">bootstrapTokens:</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">groups:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">system:bootstrappers:kubeadm:default-node-token</span></span><br><span class="line">  <span class="attr">token:</span> <span class="string">abcdef.0123456789abcdef</span></span><br><span class="line">  <span class="attr">ttl:</span> <span class="string">24h0m0s</span></span><br><span class="line">  <span class="attr">usages:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">signing</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">authentication</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">InitConfiguration</span></span><br><span class="line"><span class="attr">localAPIEndpoint:</span></span><br><span class="line">  <span class="attr">advertiseAddress:</span> <span class="number">10.0</span><span class="number">.0</span><span class="number">.216</span></span><br><span class="line">  <span class="attr">bindPort:</span> <span class="number">6443</span></span><br><span class="line"><span class="attr">nodeRegistration:</span></span><br><span class="line">  <span class="attr">criSocket:</span> <span class="string">/var/run/dockershim.sock</span></span><br><span class="line">  <span class="attr">imagePullPolicy:</span> <span class="string">IfNotPresent</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">ip-10-0-0-216.ap-east-1.compute.internal</span></span><br><span class="line">  <span class="attr">taints:</span> <span class="literal">null</span></span><br><span class="line">  <span class="attr">kubeletExtraArgs:</span></span><br><span class="line">    <span class="attr">cloud-provider:</span> <span class="string">&quot;aws&quot;</span></span><br><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="attr">apiServer:</span></span><br><span class="line">  <span class="attr">timeoutForControlPlane:</span> <span class="string">4m0s</span></span><br><span class="line">  <span class="attr">extraArgs:</span></span><br><span class="line">    <span class="attr">cloud-provider:</span> <span class="string">&quot;aws&quot;</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">kubeadm.k8s.io/v1beta3</span></span><br><span class="line"><span class="attr">certificatesDir:</span> <span class="string">/etc/kubernetes/pki</span></span><br><span class="line"><span class="attr">clusterName:</span> <span class="string">kubernetes</span></span><br><span class="line"><span class="attr">controllerManager:</span></span><br><span class="line">  <span class="attr">extraArgs:</span></span><br><span class="line">    <span class="attr">cloud-provider:</span> <span class="string">&quot;aws&quot;</span></span><br><span class="line"><span class="attr">dns:</span> &#123;&#125;</span><br><span class="line"><span class="attr">etcd:</span></span><br><span class="line">  <span class="attr">local:</span></span><br><span class="line">    <span class="attr">dataDir:</span> <span class="string">/var/lib/etcd</span></span><br><span class="line"><span class="attr">imageRepository:</span> <span class="string">k8s.gcr.io</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ClusterConfiguration</span></span><br><span class="line"><span class="attr">kubernetesVersion:</span> <span class="number">1.23</span><span class="number">.0</span></span><br><span class="line"><span class="attr">networking:</span></span><br><span class="line">  <span class="attr">dnsDomain:</span> <span class="string">cluster.local</span></span><br><span class="line">  <span class="attr">serviceSubnet:</span> <span class="number">10.96</span><span class="number">.0</span><span class="number">.0</span><span class="string">/12</span></span><br><span class="line">  <span class="attr">podSubnet:</span> <span class="number">10.244</span><span class="number">.0</span><span class="number">.0</span><span class="string">/16</span></span><br><span class="line"><span class="attr">scheduler:</span> &#123;&#125;</span><br><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">KubeletConfiguration</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">kubelet.config.k8s.io/v1beta1</span></span><br><span class="line"><span class="attr">cgroupDriver:</span> <span class="string">cgroupfs</span></span><br></pre></td></tr></table></figure>
+
+<p>我们可以在Kubernetes的代码中(以v1.23.3为例)看到初始化Cloud Provider的相关逻辑：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">createCloudProvider</span><span class="params">(cloudProvider <span class="type">string</span>, externalCloudVolumePlugin <span class="type">string</span>, cloudConfigFile <span class="type">string</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">                         allowUntaggedCloud <span class="type">bool</span>, sharedInformers informers.SharedInformerFactory)</span></span> (cloudprovider.Interface, ControllerLoopMode, <span class="type">error</span>) &#123;</span><br><span class="line">    <span class="keyword">var</span> cloud cloudprovider.Interface</span><br><span class="line">    <span class="keyword">var</span> loopMode ControllerLoopMode</span><br><span class="line">    <span class="keyword">var</span> err <span class="type">error</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> utilfeature.DefaultFeatureGate.Enabled(features.DisableCloudProviders) &amp;&amp; cloudprovider.IsDeprecatedInternal(cloudProvider) &#123;</span><br><span class="line">        cloudprovider.DisableWarningForProvider(cloudProvider)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nil</span>, ExternalLoops, fmt.Errorf(</span><br><span class="line">            <span class="string">&quot;cloud provider %q was specified, but built-in cloud providers are disabled. Please set --cloud-provider=external and migrate to an external cloud provider&quot;</span>,</span><br><span class="line">            cloudProvider)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 判断是否是external参数</span></span><br><span class="line">    <span class="keyword">if</span> cloudprovider.IsExternal(cloudProvider) &#123;</span><br><span class="line">        loopMode = ExternalLoops</span><br><span class="line">        <span class="keyword">if</span> externalCloudVolumePlugin == <span class="string">&quot;&quot;</span> &#123;</span><br><span class="line">            <span class="comment">// externalCloudVolumePlugin is temporary until we split all cloud providers out.</span></span><br><span class="line">            <span class="comment">// So we just tell the caller that we need to run ExternalLoops without any cloud provider.</span></span><br><span class="line">            <span class="keyword">return</span> <span class="literal">nil</span>, loopMode, <span class="literal">nil</span></span><br><span class="line">        &#125;</span><br><span class="line">        cloud, err = cloudprovider.InitCloudProvider(externalCloudVolumePlugin, cloudConfigFile)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 输出弃用信息</span></span><br><span class="line">        cloudprovider.DeprecationWarningForProvider(cloudProvider)</span><br><span class="line">        </span><br><span class="line">        loopMode = IncludeCloudLoops</span><br><span class="line">        <span class="comment">// 初始化相应的云厂商provider</span></span><br><span class="line">        cloud, err = cloudprovider.InitCloudProvider(cloudProvider, cloudConfigFile)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nil</span>, loopMode, fmt.Errorf(<span class="string">&quot;cloud provider could not be initialized: %v&quot;</span>, err)</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> cloud != <span class="literal">nil</span> &amp;&amp; !cloud.HasClusterID() &#123;</span><br><span class="line">        <span class="keyword">if</span> allowUntaggedCloud &#123;</span><br><span class="line">            klog.Warning(<span class="string">&quot;detected a cluster without a ClusterID.  A ClusterID will be required in the future.  Please tag your cluster to avoid any future issues&quot;</span>)</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">nil</span>, loopMode, fmt.Errorf(<span class="string">&quot;no ClusterID Found.  A ClusterID is required for the cloud provider to function properly.  This check can be bypassed by setting the allow-untagged-cloud option&quot;</span>)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 设置Informoer</span></span><br><span class="line">    <span class="keyword">if</span> informerUserCloud, ok := cloud.(cloudprovider.InformerUser); ok &#123;</span><br><span class="line">        informerUserCloud.SetInformers(sharedInformers)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> cloud, loopMode, err</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="创建LoadBalancer"><a href="#创建LoadBalancer" class="headerlink" title="创建LoadBalancer"></a>创建LoadBalancer</h2><p>现在我们可以在集群中创建Nginx的Deployment和Service:</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">hello</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">LoadBalancer</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">hello</span></span><br><span class="line">  <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">http</span></span><br><span class="line">      <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">      <span class="attr">targetPort:</span> <span class="number">80</span></span><br><span class="line">      <span class="comment"># ELB&#x27;s port</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">80</span></span><br><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">hello</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">replicas:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">matchLabels:</span></span><br><span class="line">      <span class="attr">app:</span> <span class="string">hello</span></span><br><span class="line">  <span class="attr">template:</span></span><br><span class="line">    <span class="attr">metadata:</span></span><br><span class="line">      <span class="attr">labels:</span></span><br><span class="line">        <span class="attr">app:</span> <span class="string">hello</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">containers:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">hello</span></span><br><span class="line">          <span class="attr">image:</span> <span class="string">nginx</span></span><br></pre></td></tr></table></figure>
+
+<p>你可以在的控制台上看到，一个LoadBalancer资源被自动创建了，且负载均衡的80端口对应的后端实例端口为31977。<br><img src="/use-loadbalancer-in-self-built-k8s-cluster/ec2-elb.png"></p>
+<p>我们再来看下刚才创建的LoadBalancer Service：<br><img src="/use-loadbalancer-in-self-built-k8s-cluster/get-service.png"></p>
+<p><img src="/use-loadbalancer-in-self-built-k8s-cluster/des-service.png"></p>
+<p>和NodePort的Service类似，LoadBalancer类型的Service也会有一个NodePort端口暴露，这块的逻辑对于这两种Service是一样的，也就是kube-proxy在每个节点开放了31977这个端口，这里不在赘述。</p>
+<p>登录浏览器，你可以使用External-IP访问到Nginx主页面。</p>
+<p>以上，我们通过创建LoadBalancer类型的Service来暴露我们集群内部的服务。创建LoadBalancer时Kubernetes主要为我们做了这些事情：</p>
+<ul>
+<li>在所有节点上开放一个相同的端口，并做流量的负载均衡（由kube-proxy完成）</li>
+<li>自动为我们创建云上LoadBalancer资源，并且完成对应的实例端口映射（由service-controller完成）</li>
+</ul>
+<h2 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h2><p>Cloud Provider中的service-controller的新建代码:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// New returns a new service controller to keep cloud provider service resources</span></span><br><span class="line"><span class="comment">// (like load balancers) in sync with the registry.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">New</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">	cloud cloudprovider.Interface,</span></span></span><br><span class="line"><span class="params"><span class="function">	kubeClient clientset.Interface,</span></span></span><br><span class="line"><span class="params"><span class="function">	serviceInformer coreinformers.ServiceInformer,</span></span></span><br><span class="line"><span class="params"><span class="function">	nodeInformer coreinformers.NodeInformer,</span></span></span><br><span class="line"><span class="params"><span class="function">	clusterName <span class="type">string</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">	featureGate featuregate.FeatureGate,</span></span></span><br><span class="line"><span class="params"><span class="function">)</span></span> (*Controller, <span class="type">error</span>) &#123;</span><br><span class="line">	broadcaster := record.NewBroadcaster()</span><br><span class="line">	broadcaster.StartStructuredLogging(<span class="number">0</span>)</span><br><span class="line">	broadcaster.StartRecordingToSink(&amp;v1core.EventSinkImpl&#123;Interface: kubeClient.CoreV1().Events(<span class="string">&quot;&quot;</span>)&#125;)</span><br><span class="line">	recorder := broadcaster.NewRecorder(scheme.Scheme, v1.EventSource&#123;Component: <span class="string">&quot;service-controller&quot;</span>&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> kubeClient != <span class="literal">nil</span> &amp;&amp; kubeClient.CoreV1().RESTClient().GetRateLimiter() != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">if</span> err := ratelimiter.RegisterMetricAndTrackRateLimiterUsage(subSystemName, kubeClient.CoreV1().RESTClient().GetRateLimiter()); err != <span class="literal">nil</span> &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	registerMetrics()</span><br><span class="line">	s := &amp;Controller&#123;</span><br><span class="line">		cloud:            cloud,</span><br><span class="line">		knownHosts:       []*v1.Node&#123;&#125;,</span><br><span class="line">		kubeClient:       kubeClient,</span><br><span class="line">		clusterName:      clusterName,</span><br><span class="line">		cache:            &amp;serviceCache&#123;serviceMap: <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="type">string</span>]*cachedService)&#125;,</span><br><span class="line">		eventBroadcaster: broadcaster,</span><br><span class="line">		eventRecorder:    recorder,</span><br><span class="line">		nodeLister:       nodeInformer.Lister(),</span><br><span class="line">		nodeListerSynced: nodeInformer.Informer().HasSynced,</span><br><span class="line">		queue:            workqueue.NewNamedRateLimitingQueue(workqueue.NewItemExponentialFailureRateLimiter(minRetryDelay, maxRetryDelay), <span class="string">&quot;service&quot;</span>),</span><br><span class="line">		<span class="comment">// nodeSyncCh has a size 1 buffer. Only one pending sync signal would be cached.</span></span><br><span class="line">		nodeSyncCh: <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">interface</span>&#123;&#125;, <span class="number">1</span>),</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	serviceInformer.Informer().AddEventHandlerWithResyncPeriod(</span><br><span class="line">		cache.ResourceEventHandlerFuncs&#123;</span><br><span class="line">            <span class="comment">// 添加事件回调函数</span></span><br><span class="line">			AddFunc: <span class="function"><span class="keyword">func</span><span class="params">(cur <span class="keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">				svc, ok := cur.(*v1.Service)</span><br><span class="line">				<span class="comment">// Check cleanup here can provide a remedy when controller failed to handle</span></span><br><span class="line">				<span class="comment">// changes before it exiting (e.g. crashing, restart, etc.).</span></span><br><span class="line">				<span class="keyword">if</span> ok &amp;&amp; (wantsLoadBalancer(svc) || needsCleanup(svc)) &#123;</span><br><span class="line">					s.enqueueService(cur)</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;,</span><br><span class="line">            <span class="comment">// 更新事件回调函数</span></span><br><span class="line">			UpdateFunc: <span class="function"><span class="keyword">func</span><span class="params">(old, cur <span class="keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">				oldSvc, ok1 := old.(*v1.Service)</span><br><span class="line">				curSvc, ok2 := cur.(*v1.Service)</span><br><span class="line">				<span class="keyword">if</span> ok1 &amp;&amp; ok2 &amp;&amp; (s.needsUpdate(oldSvc, curSvc) || needsCleanup(curSvc)) &#123;</span><br><span class="line">					s.enqueueService(cur)</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;,</span><br><span class="line">			<span class="comment">// No need to handle deletion event because the deletion would be handled by</span></span><br><span class="line">			<span class="comment">// the update path when the deletion timestamp is added.</span></span><br><span class="line">		&#125;,</span><br><span class="line">		serviceSyncPeriod,</span><br><span class="line">	)</span><br><span class="line">	s.serviceLister = serviceInformer.Lister()</span><br><span class="line">	s.serviceListerSynced = serviceInformer.Informer().HasSynced</span><br><span class="line"></span><br><span class="line">	...</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> err := s.init(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> s, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// LoadBalance类型</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">wantsLoadBalancer</span><span class="params">(service *v1.Service)</span></span> <span class="type">bool</span> &#123;</span><br><span class="line">	<span class="comment">// if LoadBalancerClass is set, the user does not want the default cloud-provider Load Balancer</span></span><br><span class="line">	<span class="keyword">return</span> service.Spec.Type == v1.ServiceTypeLoadBalancer &amp;&amp; service.Spec.LoadBalancerClass == <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，在Cloud Provider中的serviceInformer只关注了LoadBalancer类型的Service的动作事件。当相对应的事件入队时，控制循环会执行相应的调谐逻辑。</p>
+<p>客户端到我们的业务实例请求流程如下：<br><img src="/use-loadbalancer-in-self-built-k8s-cluster/loadbanlance-arch.png"></p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>本文简单介绍了暴露服务的主要几种方式，并着重介绍了Cloud Provider，并通过AWS的Cloud Provider创建了一个LoadBalancer。当然还有以下要注意的点：</p>
+<ul>
+<li>LoadBalancer是Kubernetes在NodePort类型Service上的功能加成，他们的基础均是ClusterIP</li>
+<li>公有云上的容器服务一般都会使用自家的out-of-tree的cloud-controller-manager组件</li>
+<li>微服务架构下，每个服务使用都使用一个LoadBalancer反而带来了额外的开销和管理成本，可以搭配Ingress等7层LoadBalancer一起使用</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/edge-dc/" rel="prev" title="可移动数据中心的构想与实现">
+                  <i class="fa fa-angle-left"></i> 可移动数据中心的构想与实现
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/blockchain-with-gitops/" rel="next" title="区块链与GitOps">
+                  区块链与GitOps <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CITAHub</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">43k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">2:38</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://unpkg.com/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/pangu@4.0.7/dist/browser/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  <script src="https://unpkg.com/hexo-generator-searchdb@1.4.1/dist/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

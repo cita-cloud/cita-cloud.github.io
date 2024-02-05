@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"cita-cloud.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="王快乐： 好！我来分享一下 高可用的网络架构 吧 王快乐： 这个高可用的网络架构更偏向于基础设施，与我最近的工作内容相关。 王快乐： 希望能给应用层网络高可用带来启发吧。 王快乐： 所谓基础设施的高可用网络架构，是为了解决提升带宽、增加可靠性，先给大家分享一下基础设施高可用网络架构的拓扑图。  王快乐： 这个架构，一会儿再解释。我先分享一些简单网络的知识，做个铺垫。 王快乐： 华为有个 eNSP">
+<meta property="og:type" content="article">
+<meta property="og:title" content="技术沙龙第二期">
+<meta property="og:url" content="https://cita-cloud.github.io/tech-salon-2/index.html">
+<meta property="og:site_name" content="CITAHub技术团队">
+<meta property="og:description" content="王快乐： 好！我来分享一下 高可用的网络架构 吧 王快乐： 这个高可用的网络架构更偏向于基础设施，与我最近的工作内容相关。 王快乐： 希望能给应用层网络高可用带来启发吧。 王快乐： 所谓基础设施的高可用网络架构，是为了解决提升带宽、增加可靠性，先给大家分享一下基础设施高可用网络架构的拓扑图。  王快乐： 这个架构，一会儿再解释。我先分享一些简单网络的知识，做个铺垫。 王快乐： 华为有个 eNSP">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-2/network.png">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-2/ensp.png">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-2/switch.png">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-2/big-switch.png">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-2/network.png">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-2/topo.png">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-2/rongyu.png">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-2/network.png">
+<meta property="article:published_time" content="2021-11-11T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-11-11T16:00:00.000Z">
+<meta property="article:author" content="CITAHub">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cita-cloud.github.io/tech-salon-2/network.png">
+
+
+<link rel="canonical" href="https://cita-cloud.github.io/tech-salon-2/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://cita-cloud.github.io/tech-salon-2/","path":"tech-salon-2/","title":"技术沙龙第二期"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>技术沙龙第二期 | CITAHub技术团队</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">CITAHub技术团队</p>
+      <i class="logo-line"></i>
+    </a>
+      <img class="custom-logo-image" src="/uploads/citahub.jpg" alt="CITAHub技术团队">
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-overview-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CITAHub</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/citahub" title="CITAHub仓库 → https:&#x2F;&#x2F;github.com&#x2F;citahub" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITAHub仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/cita-cloud" title="CITA-Cloud仓库 → https:&#x2F;&#x2F;github.com&#x2F;cita-cloud" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITA-Cloud仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:contact@rivtower.com" title="E-Mail → mailto:contact@rivtower.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://talk.citahub.com/" title="论坛 → https:&#x2F;&#x2F;talk.citahub.com" rel="noopener me" target="_blank"><i class="fab fa-stack-overflow fa-fw"></i>论坛</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://docs.citahub.com/zh-CN/welcome" title="CITAHub文档 → https:&#x2F;&#x2F;docs.citahub.com&#x2F;zh-CN&#x2F;welcome" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITAHub文档</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://cita-cloud-docs.readthedocs.io/zh_CN/latest/" title="CITA-Cloud文档 → https:&#x2F;&#x2F;cita-cloud-docs.readthedocs.io&#x2F;zh_CN&#x2F;latest&#x2F;" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITA-Cloud文档</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cita-cloud.github.io/tech-salon-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CITAHub">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="技术沙龙第二期 | CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          技术沙龙第二期
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-11-12 00:00:00" itemprop="dateCreated datePublished" datetime="2021-11-12T00:00:00+08:00">2021-11-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E7%BD%91%E7%BB%9C/" itemprop="url" rel="index"><span itemprop="name">网络</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>1.9k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>7 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>王快乐：</p>
+<p>好！我来分享一下 高可用的网络架构 吧</p>
+<p>王快乐：</p>
+<p>这个高可用的网络架构更偏向于基础设施，与我最近的工作内容相关。</p>
+<p>王快乐：</p>
+<p>希望能给应用层网络高可用带来启发吧。</p>
+<p>王快乐：</p>
+<p>所谓基础设施的高可用网络架构，是为了解决提升带宽、增加可靠性，先给大家分享一下基础设施高可用网络架构的拓扑图。</p>
+<p><img src="/tech-salon-2/network.png"></p>
+<p>王快乐：</p>
+<p>这个架构，一会儿再解释。我先分享一些简单网络的知识，做个铺垫。</p>
+<p>王快乐：</p>
+<p>华为有个 eNSP 模拟器，它提供一些网络设备，可以让我们随意组合，来进行网络实验。</p>
+<p>这个是我昨晚做实验的一个拓扑，用来测试 ACL 了。提升网络安全的。通过 ACL 来控制，哪些部门 的 哪些设备 能访问 哪些网络。</p>
+<p>这是 eNSP 模拟器，挺有意思的。我总不能买一堆设备回来做实验。除了华为，华三和思科也提供自己的模拟器，意图都是相同的。</p>
+<p><img src="/tech-salon-2/ensp.png"></p>
+<p>王快乐：</p>
+<p>我们常见的网络设备，一般有交换机、路由器、防火墙、无线设备（AP、AC），还有 WAF 这些设备就比较少见。</p>
+<p>基础设施的高可用网络架构里面，常规配置是：交换机 比较多，相当多；路由器一般就两台；防火墙也两台；其他设备一边根据需求、成本各方面进行综合考虑是否采用</p>
+<p>主要的还是交换机。</p>
+<p>王快乐：</p>
+<p>交换机一般分为两类，盒式交换机，框式交换机。</p>
+<p>盒式交换机就是我们平时见到的那种，一个方形的盒子。</p>
+<p>框式交换机式数据中心用的，挺大的，各部分都是模块化的。</p>
+<p>王快乐：</p>
+<p>这个是盒式交换机</p>
+<p><img src="/tech-salon-2/switch.png"></p>
+<p>王快乐：</p>
+<p>这个是框式交换机，各个部分都是模块化的，坏了直接换。</p>
+<p>说到这，有句话真的是，技术进步的厉害，思想进步的慢。与盒式交换机比，框式还是模块化思想，将各个部分模块化、易插拔，坏了直接换模块。</p>
+<p><img src="/tech-salon-2/big-switch.png"></p>
+<p>王快乐：</p>
+<p>盒式交换机，小型园区网、企业网会使用。框式交换机，一般数据中心会使用。</p>
+<p>王快乐：</p>
+<p>路由器、防火墙、无线设备（AP、AC），这些就不介绍了，这些不是这次分享的重点。</p>
+<p>王快乐：</p>
+<p>然后，我们再看一下交换机角色。这里有用到了分层的思想。</p>
+<p>交换机的角色，分为三类：接入层、汇聚层、核心层。</p>
+<p>从拓扑图里看，最下面是接入层，最上面是核心层。</p>
+<p>接入层交换机：就是我们平台连接 PC 的交换机，功能很简单。听名字也是，只能接入设备，没有其他功能了。</p>
+<p>汇聚层交换机：就是将链路进行汇聚，负责网络层的二层数据转发，只涉及 MAC 地址。也就是同个网络数据的转发。可以直接理解成内网数据转发。</p>
+<p>核心层交换机：就有点路由功能了，三层转发，会涉及一些 IP 网络。交换机也有路由功能的，只是做的比较简单。说是分层思想，但也不可能 100% 都分开，也很小的耦合和关联度。</p>
+<p><img src="/tech-salon-2/network.png"></p>
+<p>yzl：</p>
+<p>ip网络是ip协议层的网络吗</p>
+<p>王快乐：</p>
+<p>我们再来看一下交换机和交换机、交换机和终端设备的连接方式。</p>
+<p>交换机和终端设备：我们平时连的比较简单，直接 PC 连上就行了。服务器不是这个样子，公司内网的服务器有四个网口，需要连接两台交换机，提供冗余和带宽的。</p>
+<p>交换机和交换机：那绝对是个“环路连接法”。从图上也能看出来，一台交换机，连了两台设备，两台设备又互联，就是个环路。</p>
+<p>抽出来就是下图的一个简单拓扑。模拟器比较简单，Server 没有那么多网口。</p>
+<p><img src="/tech-salon-2/topo.png"></p>
+<p>王快乐：</p>
+<p>环路的问题不用担心，有生成树协议，STP RSTP MSTP。</p>
+<p>通过这些协议，交换机进行角色选举，切换端口状态。端口状态有的：AP DP BP RP EP 五种状态，这个无需深究。</p>
+<p>端口角色确认之后，某些端口是阻塞的，无法转发数据，这样就自己破除环路了。</p>
+<p>自动将环路剪裁成树形结构，所以叫生成树协议。</p>
+<p>王快乐：</p>
+<p>有人可能会问……其实没人问……为啥非要接个环路，再引入一个协议，不接成环路不就好了？</p>
+<p>为了冗余，假如一条链路断了，我们还可以走另外一条。</p>
+<p><img src="/tech-salon-2/rongyu.png"></p>
+<p>Shawn：</p>
+<p>条条大路通罗马</p>
+<p>王快乐：</p>
+<p>是的，就是这个样子。除了冗余外，还能增加内网带宽。</p>
+<p>王快乐：</p>
+<p>现在回到最开始的架构图</p>
+<p>iStack，Intelligent Stack 是华为的叫法，思科也有类似的技术。虚拟交换机，将两个交换机合并成一个逻辑的交换机，在逻辑上是一台设备。iStack 是用盒式交换机的。</p>
+<p>CSS CLuster Switch System，也是华为的叫法，也是将多台设备逻辑成一台设备。CSS 需要使用框式交换机实现。</p>
+<p>Eth-Trunk：是链路聚合。两台交换机之间，连了很多线。但是，这些线是逻辑上的一根线，提成带宽，增加冗余。</p>
+<p>STP：是生成树协议，防止线连多了以后，出现环路。</p>
+<p>整个网络，通过设备的方式（双设备，成本高），并辅以软件实现（Eth-Trunk，成本低）来提高冗余、增强可靠性。</p>
+<p><img src="/tech-salon-2/network.png"></p>
+<p>王快乐：</p>
+<p>网络是个基础设施，里面涉及了很多东西，但是这个不是这个分享想表达的。今天的分享想表达的是 技术千变万化，但是背后的思想是固定，我们可以把这些思想借用过来，并进行进一步的提升这些思想，而不仅局限于技术的提升。</p>
+<p>王快乐：</p>
+<p>好了，今天就分享这么多吧，谢谢大家聆听。[呲牙]</p>
+<p>洁洁：</p>
+<p>@王快乐 讲讲家用路由和企业路由的区别。</p>
+<p>志伟：</p>
+<p>最主要的区别就是贵[破涕为笑]</p>
+<p>Rain：</p>
+<p>实现可靠性的级别不同，企业级要求7x24工作强度不能异常，家用的可接受每日重启</p>
+<p>王快乐：</p>
+<p>绝大多数东西都是需求和业务驱动的，然后技术只是做个实现。</p>
+<p>所以，两者的差别就是功能多少的差别。</p>
+<p>家用路由器的需求就是上网就行了：<br>1）PPPoE 做个拨号，NAT 做个地址转换；<br>2）DHCP 自动分配地址，解决用户不会配置、配置麻烦的问题。<br>3）再就是无线功能<br>4）前三点足够了，其他的功能都是面向其他有特殊需求的用户的。<br>5）然后功能多了，再提高一下性能。</p>
+<p>家用路由器以解决家庭上网需求为主。</p>
+<p>企业路由器就不一样，那老复杂了：<br>1）首先就没有无线功能，路由器的核心是路由三层数据包。家用路由器里并不强调这点。<br>2）焦点还是企业需求：7x24、可用性、QoS、网络隔离、访问安全、外部接入。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/tech-salon-1/" rel="prev" title="技术沙龙第一期">
+                  <i class="fa fa-angle-left"></i> 技术沙龙第一期
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/tech-salon-3/" rel="next" title="技术沙龙第三期">
+                  技术沙龙第三期 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CITAHub</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">43k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">2:38</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://unpkg.com/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/pangu@4.0.7/dist/browser/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  <script src="https://unpkg.com/hexo-generator-searchdb@1.4.1/dist/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"cita-cloud.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="Rain： 关于跨链，V神在2016发布过一篇报告《Chain Interoperability》，里面总结了3种跨链方案的实践：  Notaries（公证员） Relays（中继技术） Hash-locking（哈希锁定）  Rain： 今天我就分享一下 Hash-locking（哈希锁定）的原理 Rain： 哈希锁定技术的核心原理是使用带有哈希锁定机制的合约进行资产锁定实现质押效果，为不同资产">
+<meta property="og:type" content="article">
+<meta property="og:title" content="技术沙龙第四期-跨链">
+<meta property="og:url" content="https://cita-cloud.github.io/tech-salon-4-cross-chain/index.html">
+<meta property="og:site_name" content="CITAHub技术团队">
+<meta property="og:description" content="Rain： 关于跨链，V神在2016发布过一篇报告《Chain Interoperability》，里面总结了3种跨链方案的实践：  Notaries（公证员） Relays（中继技术） Hash-locking（哈希锁定）  Rain： 今天我就分享一下 Hash-locking（哈希锁定）的原理 Rain： 哈希锁定技术的核心原理是使用带有哈希锁定机制的合约进行资产锁定实现质押效果，为不同资产">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-4-cross-chain/workflow.png">
+<meta property="og:image" content="https://cita-cloud.github.io/tech-salon-4-cross-chain/workflow1.png">
+<meta property="article:published_time" content="2021-11-19T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-11-19T16:00:00.000Z">
+<meta property="article:author" content="CITAHub">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cita-cloud.github.io/tech-salon-4-cross-chain/workflow.png">
+
+
+<link rel="canonical" href="https://cita-cloud.github.io/tech-salon-4-cross-chain/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://cita-cloud.github.io/tech-salon-4-cross-chain/","path":"tech-salon-4-cross-chain/","title":"技术沙龙第四期-跨链"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>技术沙龙第四期-跨链 | CITAHub技术团队</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">CITAHub技术团队</p>
+      <i class="logo-line"></i>
+    </a>
+      <img class="custom-logo-image" src="/uploads/citahub.jpg" alt="CITAHub技术团队">
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-overview-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CITAHub</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/citahub" title="CITAHub仓库 → https:&#x2F;&#x2F;github.com&#x2F;citahub" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITAHub仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/cita-cloud" title="CITA-Cloud仓库 → https:&#x2F;&#x2F;github.com&#x2F;cita-cloud" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITA-Cloud仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:contact@rivtower.com" title="E-Mail → mailto:contact@rivtower.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://talk.citahub.com/" title="论坛 → https:&#x2F;&#x2F;talk.citahub.com" rel="noopener me" target="_blank"><i class="fab fa-stack-overflow fa-fw"></i>论坛</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://docs.citahub.com/zh-CN/welcome" title="CITAHub文档 → https:&#x2F;&#x2F;docs.citahub.com&#x2F;zh-CN&#x2F;welcome" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITAHub文档</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://cita-cloud-docs.readthedocs.io/zh_CN/latest/" title="CITA-Cloud文档 → https:&#x2F;&#x2F;cita-cloud-docs.readthedocs.io&#x2F;zh_CN&#x2F;latest&#x2F;" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITA-Cloud文档</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cita-cloud.github.io/tech-salon-4-cross-chain/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CITAHub">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="技术沙龙第四期-跨链 | CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          技术沙龙第四期-跨链
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-11-20 00:00:00" itemprop="dateCreated datePublished" datetime="2021-11-20T00:00:00+08:00">2021-11-20</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/" itemprop="url" rel="index"><span itemprop="name">区块链</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>1.5k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>5 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>Rain：</p>
+<p>关于跨链，V神在2016发布过一篇报告《Chain Interoperability》，里面总结了3种跨链方案的实践：</p>
+<ul>
+<li>Notaries（公证员）</li>
+<li>Relays（中继技术）</li>
+<li>Hash-locking（哈希锁定）</li>
+</ul>
+<p>Rain：</p>
+<p>今天我就分享一下 Hash-locking（哈希锁定）的原理</p>
+<p>Rain：</p>
+<p>哈希锁定技术的核心原理是使用带有哈希锁定机制的合约进行资产锁定实现质押效果，为不同资产之间的交易提供了信任基础。</p>
+<p>Rain：</p>
+<p>使用哈希锁定机制的合约称为哈希时间锁合约（Hash Time Locked Contract，简称HTLC)</p>
+<p>Rain：</p>
+<p>HTLC 的核心是时间锁和哈希锁</p>
+<p>Rain：</p>
+<p>时间锁是指，交易双方约定在某个时间内提交才有效，超时则提案方案失效（无论是提出方或接受方）</p>
+<p>Rain：</p>
+<p>如果交易因为各种原因未能成功，时间锁能够让交易参与各方拿回自己资金，避免因欺诈或交易失败造成的损失</p>
+<p>Rain：</p>
+<p>哈希锁是指，对一个哈希值 h，如果提供原像 s 使得 hash(s) &#x3D; h，则提案有效，否则失效</p>
+<p>Rain：</p>
+<p>HTLC 主要由两部分逻辑组成：哈希验证和过期验证</p>
+<p>Rain：</p>
+<p>前面是概念定义，接下来以2个持有不同区块链资产的用户使用HTLC进行资产交换来示例说明</p>
+<p>Rain：</p>
+<p>假设 A用户 和 B用户 有资产交换的需求，A用户 想用 m 个 x链数字资产 和 B用户 换 n 个 y链数字资产</p>
+<p>Rain：</p>
+<p>大家可以把 x链数字资产 替换为 BTC，把 y链数字资产 替换为 ETH 来做实例理解</p>
+<p>Rain：</p>
+<p>首先需要在两条链上部署哈希时间锁定合约，然后执行如下步骤进行跨链资产交换</p>
+<p>Rain：</p>
+<ol>
+<li>A用户 随机构建一个字符串 s，并计算出其哈希 h &#x3D; hash(s)；</li>
+</ol>
+<p>Rain：</p>
+<ol start="2">
+<li>A用户 将 h 发送给 B用户 的HTLC合约；</li>
+</ol>
+<p>Rain：</p>
+<ol start="3">
+<li>A用户 锁定自己的 m 个 x链数字资产，并设置一个较长的锁定时间 t1, 并设置了获取该 x链数字资产 的一个条件：如果 B用户 能够提供 h 的原始值 s 就可以得到该 x链数字资产；</li>
+</ol>
+<p>Rain：</p>
+<ol start="4">
+<li>B用户 观察到 A用户 HTLC合约中锁定了一个 x链数字资产, 然后 B用户 锁定自己的 n 个 y链数字资产 资产，并设置一个相对较短的锁定时间 t2, t2 &lt; t1, B用户 也设置了获取条件：如果 A用户 能提供 h 的原始值 s 就可以获取 n 个 y链数字资产；</li>
+</ol>
+<p>Rain：</p>
+<ol start="5">
+<li>A用户 将自己最初生成的字符串 s 发送到 B用户 的HTLC合约里取得了 n 个 y链数字资产；如果到时间点 t2 后仍未解锁，则退回 n 个 y链数字资产给 B用户；</li>
+</ol>
+<p>Rain：</p>
+<ol start="6">
+<li>B用户 观察到步骤 5 中 A用户 的 s 值，将其发送给 A用户 的HTLC合约成功获取 m 个 x链数字资产；如果到时间点 t1 后仍未解锁，则退回 m 个 x链数字资产给 A用户；</li>
+</ol>
+<p>Rain：</p>
+<p>经过以上步骤，就完成了 A用户 用 m 个 x链数字资产 和 B用户 交换 n 个 y链数字资产</p>
+<p>Rain：</p>
+<p>以上的跨链事务流程图如下</p>
+<p><img src="/tech-salon-4-cross-chain/workflow.png"></p>
+<p>Rain：</p>
+<p>我们可以代入参数来理解：</p>
+<p>A用户 &#x3D; Alice<br>B用户 &#x3D; Bob<br>x链数字资产 &#x3D; BTC<br>y链数字资产 &#x3D; ETH<br>m &#x3D; 1<br>n &#x3D; 20</p>
+<p>Rain：</p>
+<p>场景是：Alice 用 1 个 BTC 和 Bob 交换 20 个 ETH</p>
+<p>Rain：</p>
+<p>那事务流程图就是</p>
+<p><img src="/tech-salon-4-cross-chain/workflow1.png"><br>Rain：</p>
+<p>HTLC 的应用有以下的限制</p>
+<p>Rain：</p>
+<ol>
+<li>协议兼容性较低</li>
+</ol>
+<p>Rain：</p>
+<p>HTLC 实施需要满足一些必要条件：</p>
+<p>Rain：</p>
+<p>一是用户资产所在区块链需要基于相同哈希算法（比如都使用比较常用的 SHA-256 哈希算法）；</p>
+<p>Rain：</p>
+<p>二是区块链需要兼容 HTLC 和其他可编程功能（如BTC的Bitcoin Script或ETH的智能合约）；</p>
+<p>Rain：</p>
+<p>三是交易双方需要在同一区块链上有交易账户；</p>
+<p>Rain：</p>
+<p>四是对于不包含资产托管账户（例如 Fabric）的区块链需要借助智能合约来构建账户概念。</p>
+<p>Rain：</p>
+<p>限制2. 时间锁机制造成退款时间过长</p>
+<p>Rain：</p>
+<p>时间锁有效降低了交易对手风险，但如果有中间节点因故无法进行交易，则必须等时间锁设定时间结束才能退款</p>
+<p>Rain：</p>
+<p>哈希锁定技术不是一种普适的跨链通讯机制，它解决的是价值交换问题，而不是信息传递问题，因此应用领域比较狭小</p>
+<p>Rain：</p>
+<p>以上就是我今天的分享</p>
+<p>Rain：</p>
+<p>抛出个问题：哈希锁定技术能否用于做跨链资产转移？</p>
+<p>U2：</p>
+<p>htlc应该是支持资产的原子交换</p>
+<p>U2：</p>
+<p>像侧链或者中继链这种relay模式的支持转移</p>
+<p>U2：</p>
+<p>相当于从a到b</p>
+<p>U2：</p>
+<p>另外研究区块链会发现，和传统的分布式事务算法里不同的是，区块链例一般都是用密码学加博弈论来保证的</p>
+<p>U2：</p>
+<p>像htlc本质上是一种序贯博弈</p>
+<p>U2：</p>
+<p>另外htlc也是依赖链本身的安全性，比如如果发生51%攻击依然会有资产丢失的风险</p>
+<p>U2：</p>
+<p>我记得某人写过一篇文章分析这个htlc博弈的过程，应该有一份是有一点点便宜可以占的，另外一方相对处于一个博弈的被动选择。比如就是说其中一方可以根据汇率选择是否进行交易，后后手只能根据前面的人选择被动选择，否则就有损失。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/tech-salon-3-quantum-communication/" rel="prev" title="技术沙龙第三期-量子通信入门">
+                  <i class="fa fa-angle-left"></i> 技术沙龙第三期-量子通信入门
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/tech-salon-4-did/" rel="next" title="技术沙龙第四期-分布式身份">
+                  技术沙龙第四期-分布式身份 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CITAHub</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">43k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">2:38</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://unpkg.com/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/pangu@4.0.7/dist/browser/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  <script src="https://unpkg.com/hexo-generator-searchdb@1.4.1/dist/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

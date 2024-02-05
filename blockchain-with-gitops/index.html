@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"cita-cloud.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="背景曾经有用户在论坛里反馈过区块链系统启动过程比较复杂。 首先区块系统是一个对等网络，而传统系统一般都是Client&#x2F;Server或者Master&#x2F;Slave形态。 所以在区块链设计中就有一个常见的模式，把非对等形态的软件变为对等形态。比较简单的做法就是所有节点都是Server，同时又是其他节点的Client，可以认为是把常见的网络库提供的Server&#x2F;Client形态的功能转换为对等网络。 这个">
+<meta property="og:type" content="article">
+<meta property="og:title" content="区块链与GitOps">
+<meta property="og:url" content="https://cita-cloud.github.io/blockchain-with-gitops/index.html">
+<meta property="og:site_name" content="CITAHub技术团队">
+<meta property="og:description" content="背景曾经有用户在论坛里反馈过区块链系统启动过程比较复杂。 首先区块系统是一个对等网络，而传统系统一般都是Client&#x2F;Server或者Master&#x2F;Slave形态。 所以在区块链设计中就有一个常见的模式，把非对等形态的软件变为对等形态。比较简单的做法就是所有节点都是Server，同时又是其他节点的Client，可以认为是把常见的网络库提供的Server&#x2F;Client形态的功能转换为对等网络。 这个">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cita-cloud.github.io/blockchain-with-gitops/configurations.png">
+<meta property="og:image" content="https://cita-cloud.github.io/blockchain-with-gitops/struct.png">
+<meta property="og:image" content="https://cita-cloud.github.io/blockchain-with-gitops/workflow.jpg">
+<meta property="og:image" content="https://cita-cloud.github.io/blockchain-with-gitops/set-admin.png">
+<meta property="og:image" content="https://cita-cloud.github.io/blockchain-with-gitops/append-validator.png">
+<meta property="og:image" content="https://cita-cloud.github.io/blockchain-with-gitops/final.png">
+<meta property="og:image" content="https://cita-cloud.github.io/blockchain-with-gitops/set-node.png">
+<meta property="og:image" content="https://cita-cloud.github.io/blockchain-with-gitops/create-ca.png">
+<meta property="og:image" content="https://cita-cloud.github.io/blockchain-with-gitops/create-csr.png">
+<meta property="og:image" content="https://cita-cloud.github.io/blockchain-with-gitops/sign-csr.png">
+<meta property="og:image" content="https://cita-cloud.github.io/blockchain-with-gitops/webhook.png">
+<meta property="og:image" content="https://cita-cloud.github.io/blockchain-with-gitops/add-node2.png">
+<meta property="article:published_time" content="2022-05-11T01:36:02.000Z">
+<meta property="article:modified_time" content="2022-05-11T01:36:02.000Z">
+<meta property="article:author" content="CITAHub">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cita-cloud.github.io/blockchain-with-gitops/configurations.png">
+
+
+<link rel="canonical" href="https://cita-cloud.github.io/blockchain-with-gitops/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://cita-cloud.github.io/blockchain-with-gitops/","path":"blockchain-with-gitops/","title":"区块链与GitOps"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>区块链与GitOps | CITAHub技术团队</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">CITAHub技术团队</p>
+      <i class="logo-line"></i>
+    </a>
+      <img class="custom-logo-image" src="/uploads/citahub.jpg" alt="CITAHub技术团队">
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%97%AE%E9%A2%98"><span class="nav-number">2.</span> <span class="nav-text">问题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#GitOps"><span class="nav-number">3.</span> <span class="nav-text">GitOps</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">4.</span> <span class="nav-text">解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8C%BA%E5%9D%97%E9%93%BE%E5%A3%B0%E6%98%8E%E5%BC%8F%E7%9A%84%E9%85%8D%E7%BD%AE%E6%96%B9%E5%BC%8F"><span class="nav-number">4.0.1.</span> <span class="nav-text">区块链声明式的配置方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%93%BE%E5%92%8C%E8%8A%82%E7%82%B9Git%E4%BB%93%E5%BA%93%E5%88%86%E7%A6%BB"><span class="nav-number">4.0.2.</span> <span class="nav-text">链和节点Git仓库分离</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%A4%E4%BB%98%E6%B5%81%E6%B0%B4%E7%BA%BF"><span class="nav-number">4.0.3.</span> <span class="nav-text">交付流水线</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%BC%94%E7%A4%BA"><span class="nav-number">5.</span> <span class="nav-text">演示</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%93%BE%E7%BA%A7%E5%88%AB%E9%85%8D%E7%BD%AE"><span class="nav-number">5.1.</span> <span class="nav-text">链级别配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E4%BB%93%E5%BA%93"><span class="nav-number">5.1.1.</span> <span class="nav-text">创建仓库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E4%B8%8E%E6%96%B9%E5%8A%A0%E5%85%A5"><span class="nav-number">5.1.2.</span> <span class="nav-text">参与方加入</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%93%BE%E7%9A%84%E5%8F%91%E8%B5%B7%E6%96%B9%E5%88%9D%E5%A7%8B%E5%8C%96%E9%93%BE%E7%BA%A7%E9%85%8D%E7%BD%AE"><span class="nav-number">5.1.3.</span> <span class="nav-text">链的发起方初始化链级配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E8%B6%85%E7%BA%A7%E7%AE%A1%E7%90%86%E5%91%98"><span class="nav-number">5.1.4.</span> <span class="nav-text">设置超级管理员</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E4%B8%8E%E6%96%B91%E8%AE%BE%E7%BD%AE%E5%85%B1%E8%AF%86%E8%B4%A6%E6%88%B7"><span class="nav-number">5.1.5.</span> <span class="nav-text">参与方1设置共识账户</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E4%B8%8E%E6%96%B92%E8%AE%BE%E7%BD%AE%E5%85%B1%E8%AF%86%E8%B4%A6%E6%88%B7"><span class="nav-number">5.1.6.</span> <span class="nav-text">参与方2设置共识账户</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%93%BE%E7%9A%84%E5%8F%91%E8%B5%B7%E6%96%B9%E5%85%B3%E9%97%AD%E9%93%BE%E7%BA%A7%E9%85%8D%E7%BD%AE"><span class="nav-number">5.1.7.</span> <span class="nav-text">链的发起方关闭链级配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E4%B8%8E%E6%96%B91%E6%B7%BB%E5%8A%A0%E8%8A%82%E7%82%B9%E7%BD%91%E7%BB%9C%E4%BF%A1%E6%81%AF"><span class="nav-number">5.1.8.</span> <span class="nav-text">参与方1添加节点网络信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E4%B8%8E%E6%96%B92%E6%B7%BB%E5%8A%A0%E8%8A%82%E7%82%B9%E7%BD%91%E7%BB%9C%E4%BF%A1%E6%81%AF"><span class="nav-number">5.1.9.</span> <span class="nav-text">参与方2添加节点网络信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B6%85%E7%BA%A7%E7%AE%A1%E7%90%86%E5%91%98%E5%88%9B%E5%BB%BACA%E8%AF%81%E4%B9%A6"><span class="nav-number">5.1.10.</span> <span class="nav-text">超级管理员创建CA证书</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E4%B8%8E%E6%96%B91%E5%88%9B%E5%BB%BACSR"><span class="nav-number">5.1.11.</span> <span class="nav-text">参与方1创建CSR</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E4%B8%8E%E6%96%B92%E5%88%9B%E5%BB%BACSR"><span class="nav-number">5.1.12.</span> <span class="nav-text">参与方2创建CSR</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B6%85%E7%BA%A7%E7%AE%A1%E7%90%86%E5%91%98%E5%A4%84%E7%90%86CSR"><span class="nav-number">5.1.13.</span> <span class="nav-text">超级管理员处理CSR</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%8A%82%E7%82%B9%E9%85%8D%E7%BD%AE"><span class="nav-number">5.2.</span> <span class="nav-text">节点配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E4%B8%8E%E6%96%B91%E5%88%9D%E5%A7%8B%E5%8C%96%E8%8A%82%E7%82%B9"><span class="nav-number">5.2.1.</span> <span class="nav-text">参与方1初始化节点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E4%B8%8E%E6%96%B91%E8%AE%BE%E7%BD%AE%E6%B5%81%E6%B0%B4%E7%BA%BF"><span class="nav-number">5.2.2.</span> <span class="nav-text">参与方1设置流水线</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E4%B8%8E%E6%96%B92%E5%88%9D%E5%A7%8B%E5%8C%96%E8%8A%82%E7%82%B9%E5%B9%B6%E8%AE%BE%E7%BD%AE%E6%B5%81%E6%B0%B4%E7%BA%BF"><span class="nav-number">5.2.3.</span> <span class="nav-text">参与方2初始化节点并设置流水线</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E9%85%8D%E7%BD%AE"><span class="nav-number">5.3.</span> <span class="nav-text">集群配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95"><span class="nav-number">5.4.</span> <span class="nav-text">测试</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E4%B8%8E%E6%96%B93%E6%B7%BB%E5%8A%A0%E8%8A%82%E7%82%B9%E7%BD%91%E7%BB%9C%E4%BF%A1%E6%81%AF"><span class="nav-number">5.4.1.</span> <span class="nav-text">参与方3添加节点网络信息</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CITAHub</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/citahub" title="CITAHub仓库 → https:&#x2F;&#x2F;github.com&#x2F;citahub" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITAHub仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/cita-cloud" title="CITA-Cloud仓库 → https:&#x2F;&#x2F;github.com&#x2F;cita-cloud" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITA-Cloud仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:contact@rivtower.com" title="E-Mail → mailto:contact@rivtower.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://talk.citahub.com/" title="论坛 → https:&#x2F;&#x2F;talk.citahub.com" rel="noopener me" target="_blank"><i class="fab fa-stack-overflow fa-fw"></i>论坛</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://docs.citahub.com/zh-CN/welcome" title="CITAHub文档 → https:&#x2F;&#x2F;docs.citahub.com&#x2F;zh-CN&#x2F;welcome" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITAHub文档</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://cita-cloud-docs.readthedocs.io/zh_CN/latest/" title="CITA-Cloud文档 → https:&#x2F;&#x2F;cita-cloud-docs.readthedocs.io&#x2F;zh_CN&#x2F;latest&#x2F;" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITA-Cloud文档</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cita-cloud.github.io/blockchain-with-gitops/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CITAHub">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="区块链与GitOps | CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          区块链与GitOps
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2022-05-11 09:36:02" itemprop="dateCreated datePublished" datetime="2022-05-11T09:36:02+08:00">2022-05-11</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/" itemprop="url" rel="index"><span itemprop="name">区块链</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>4.2k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>15 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>曾经有用户在论坛里反馈过区块链系统启动过程比较复杂。</p>
+<p>首先区块系统是一个对等网络，而传统系统一般都是<code>Client/Server</code>或者<code>Master/Slave</code>形态。</p>
+<p>所以在区块链设计中就有一个常见的模式，把非对等形态的软件变为对等形态。比较简单的做法就是所有节点都是<code>Server</code>，同时又是其他节点的<code>Client</code>，可以认为是把常见的网络库提供的<code>Server/Client</code>形态的功能转换为对等网络。</p>
+<p>这个方案麻烦的是生成配置文件，以及后续增加删除节点时修改配置文件。</p>
+<p>需要提供已知的所有节点的网络信息。遍历所有的节点，为每个节点生成一个相关配置。找到本节点的网络信息，确定本节点的监听端口，用于启动<code>Server</code>；使用除自己之外的其他节点的信息，用于本节点作为<code>Client</code>去连接其他节点。</p>
+<p>相当于<code>N * (N - 1)</code>个<code>Client/Server</code>的配置，且需要所有节点信息才能生成对应的配置文件，所以需要集中统一生成。</p>
+<p>同样，增加删除节点的时候，也涉及到所有配置文件的修改，需要集中修改，生成新的配置文件，然后下发到所有的节点。</p>
+<p>其次它是一个去中心化的系统，实际生产部署的时候是有多个参与方的，每个参与方负责一个节点，相互之间的协调和配合工作量比较大。且需要考虑参与方的机密信息不能泄露，因此需要分成多个步骤，将机密信息生成和协作产生区块链配置分开，进一步增加了操作的复杂程度。</p>
+<h1 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h1><ol>
+<li>参与方之间交互比较多，需要传递信息也比较多。不管是通过发邮件，还是通过其他方式传递，管理都比较困难。<br>比如，需要认为回信息的方式来确认对方已经收到，如果没有及时反馈，发送方重复发送，且信息与之前的不一致，如何处理？如果有人冒充参与方发送了假冒的信息，如何甄别？</li>
+<li>因为区块链系统多方协作的特点，上线运营之后可能还会持续有参与方加入和退出，导致节点的配置不断变化。<br>有新增节点，有节点退出，节点的ip地址或者端口可能发生变动。如何应用这些变更？如何同步到其他节点？如何记录历史上的变更？手工操作进行配置升级容易出错，且消耗时间比较长。如果不能做到配置变更时，及时完成节点配置的更新部署，导致节点配置落后或者错误，可能会让整个区块链系统存在安全风险。比如一个参与方已经退出了，但是其他参与方没有及时更新这个信息，导致已经退出的参与方仍然能够访问系统的信息。</li>
+</ol>
+<h1 id="GitOps"><a href="#GitOps" class="headerlink" title="GitOps"></a>GitOps</h1><p><code>Git</code>是一个开源的分布式版本控制系统，分布式相比集中式的最大区别是<code>Git</code>没有中央版本库，每一位开发者都可以通过克隆远程代码库，在本地机器上初始化一个完整的代码版本，开发者可以把代码的修改提交到本地代码库，也可以把本地的代码库同步到远程的代码库。</p>
+<p><code>GitOps</code>是一种持续交付的方式。它的核心思想是将应用系统的配置和部署以声明性的方式存放在<code>Git</code>版本库中。将<code>Git</code>作为交付流水线的核心，开发人员只需要将修改提到至<code>Git</code>，使用<code>Git</code>来加速和简化应用程序部署和运维任务。通过<code>GitOps</code>，当使用<code>Git</code>提交应用系统的配置更改时，自动化的交付流水线会将这些更改应用到实际系统中。</p>
+<p>将<code>GitOps</code>方法应用在持续交付流水线上，有诸多优势和特点：</p>
+<ul>
+<li>自动保证实际的应用系统和<code>Git</code>仓库中的配置是一致的。</li>
+<li>更快的部署时间和恢复时间。</li>
+<li>稳定且可重现的回滚。<code>Git</code>中保存有历史的配置信息，有问题可以随时切回历史版本。</li>
+</ul>
+<h1 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h1><p>通过<code>Git</code>来管理系统配置，使用<code>GitOps</code>实现持续交付，在传统系统中已经非常流行。</p>
+<p>但是区块链系统比传统系统更加适合这种配置管理方式。因为其配置的产生是一个协作的过程，更能发挥<code>Git</code>作为团队协作工具的特点；参与方本地拥有完整配置，但是只把部分非机密信息共享给其他参与方也符合<code>Git</code>在分布式上的特点。</p>
+<p>链的配置涉及到多个参与方，以及相互之间的信息交互，并就此对链的配置进行相应的修改。所以这是一个多方协作的场景，使用<code>Git</code>管理链的配置可以很好的解决现有方案的问题。</p>
+<ol>
+<li><code>Git</code>可以设置权限，只允许参与方查看和修改存放链配置的仓库。</li>
+<li>通过<code>push</code>命令推送本地修改到远程，安全且有回馈。</li>
+<li>可以通过<code>PR</code>等功能对修改进行审查，一个或者多个参与方都确认之后才能合并。</li>
+<li>其他参与方可以通过<code>git pull</code>拉取最新的配置。</li>
+<li><code>Git</code>本身可以记录修改的历史，何时何人做了什么修改都有记录。</li>
+</ol>
+<p>注意：</p>
+<ol>
+<li>因为配置里面有<code>ip</code>，端口等比较的敏感信息，可以通过建立私有仓库来避免信息泄露的风险。</li>
+<li>可以通过<code>Github</code>&#x2F;<code>Gitlab</code>&#x2F;<code>Gitee</code>等提供的图形界面和扩展功能更加方便的对配置修改进行管理。</li>
+</ol>
+<h3 id="区块链声明式的配置方式"><a href="#区块链声明式的配置方式" class="headerlink" title="区块链声明式的配置方式"></a>区块链声明式的配置方式</h3><p>要实施<code>GitOps</code>，核心的一点是要将区块链的配置方式改造为声明式。</p>
+<p>如果配置方式仍然是命令式的，比如，增加一个节点，删除一个节点等。因为每个节点实施的顺序不同，可能会得出不同的结果，导致不同节点的配置不一致。</p>
+<p>因此我们对区块链系统的配置项进行梳理：</p>
+<p><img src="/blockchain-with-gitops/configurations.png"></p>
+<p>并据此制定一个声明式的配置数据结构：</p>
+<p><img src="/blockchain-with-gitops/struct.png"></p>
+<p>配置变更时，不再下发配置变更动作，而是直接重新下发所有的配置信息，节点根据这个配置重新生成节点本地的配置文件。</p>
+<h3 id="链和节点Git仓库分离"><a href="#链和节点Git仓库分离" class="headerlink" title="链和节点Git仓库分离"></a>链和节点Git仓库分离</h3><p>理论上可以将一个区块链系统所有的配置信息都放在一个仓库中。</p>
+<p>但是区块链去中心化的特性，链的配置需要公开，至少在参与方之间公开，以方便多个参与方都可以修改链的配置。但是节点配置中有很多机密信息，比如节点的私钥等，如果公开会造成安全方面的隐患。</p>
+<p>因此，将链的配置信息和节点配置信息分开放在两个<code>Git</code>仓库中。</p>
+<p>链的配置信息只包含可以公开的信息，比如账户地址等，可以放在一个公开的<code>Git</code>仓库中；而私钥等机密信息存在放节点配置中，放在参与方内部私有<code>Git</code>仓库中。</p>
+<h3 id="交付流水线"><a href="#交付流水线" class="headerlink" title="交付流水线"></a>交付流水线</h3><p>以增加一个节点为例。</p>
+<ul>
+<li>新的参与方首先申请公开的存放链的配置信息的仓库的访问权限。</li>
+<li>拉取最新的链的配置，并提交要增加的节点的公开信息，然后以<code>PR</code>的形式提交对链的配置的修改。</li>
+<li>增加节点信息的PR经过审批之后，合并进最新的链的配置。</li>
+<li>已有节点通过设置链的配置<code>Git</code>仓库的<code>Webhook</code>感知链的配置的变化。</li>
+<li>通过本地的配置工具更新本地节点的配置文件，并提交至存放节点配置的<code>Git</code>仓库。</li>
+<li>应用部署系统同样通过设置存放节点配置的<code>Git</code>仓库的<code>Webhook</code>感知节点配置的变化。</li>
+<li>停掉已经存在的节点应用，并拉取最新的节点配置，重启节点应用，完成整个配置变更。</li>
+</ul>
+<p><img src="/blockchain-with-gitops/workflow.jpg"></p>
+<h1 id="演示"><a href="#演示" class="headerlink" title="演示"></a>演示</h1><p>这里在<code>gitee</code>上创建<a target="_blank" rel="noopener" href="https://gitee.com/cita-cloud/gitops-test-chain">链级配置的仓库</a>。</p>
+<p>配置工具为<a target="_blank" rel="noopener" href="https://github.com/cita-cloud/cloud-config">cloud-config</a>。</p>
+<p>在公司内部的<code>Gitlab</code>上创建节点级配置仓库。</p>
+<p>使用<code>Jekins</code>，并在相应的<code>Git</code>仓库设置<code>Webhook</code>来自动触发流水线。</p>
+<p>区块链系统运行环境为<code>k8s</code>，并且集群中安装<a target="_blank" rel="noopener" href="https://argo-cd.readthedocs.io/en/stable/getting_started/">ArgoCD</a>，用于支持<code>GitOps</code>操作。</p>
+<h2 id="链级别配置"><a href="#链级别配置" class="headerlink" title="链级别配置"></a>链级别配置</h2><h3 id="创建仓库"><a href="#创建仓库" class="headerlink" title="创建仓库"></a>创建仓库</h3><p>在<code>gitee</code>上创建仓库<code>gitops-test-chain</code>，保存链级配置。设置<code>master</code>分支不能直接<code>push</code>，只能<code>PR</code>的方式合入，并需要多个人的审批才能合入。</p>
+<h3 id="参与方加入"><a href="#参与方加入" class="headerlink" title="参与方加入"></a>参与方加入</h3><p>各个参与方申请该仓库的权限，并进行相关的设置，比如设置<code>SSH Key</code>。</p>
+<h3 id="链的发起方初始化链级配置"><a href="#链的发起方初始化链级配置" class="headerlink" title="链的发起方初始化链级配置"></a>链的发起方初始化链级配置</h3><p>初始化链级配置并提交至<code>gitops-test-chain</code>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">$ cloud-config init-chain --chain-name gitops-test-chain</span><br><span class="line">$ cloud-config init-chain-config --chain-name gitops-test-chain --consensus_tag v6.4.0 --controller_tag v6.4.0 --executor_tag v6.4.0 --kms_tag v6.4.0 --network_tag v6.4.0 --storage_tag v6.4.0</span><br><span class="line">$ cd gitops-test-chain/</span><br><span class="line">$ git init</span><br><span class="line">$ git status</span><br><span class="line">On branch master</span><br><span class="line"></span><br><span class="line">No commits yet</span><br><span class="line"></span><br><span class="line">Untracked files:</span><br><span class="line">  (use &quot;git add &lt;file&gt;...&quot; to include in what will be committed)</span><br><span class="line">        .gitignore</span><br><span class="line">        accounts/</span><br><span class="line">        ca_cert/</span><br><span class="line">        certs/</span><br><span class="line">        chain_config.toml</span><br><span class="line"></span><br><span class="line">nothing added to commit but untracked files present (use &quot;git add&quot; to track)</span><br><span class="line">$ git add .</span><br><span class="line">$ git commit -m &quot;init chain config&quot;</span><br><span class="line">$ git remote add origin git@gitee.com:cita-cloud/gitops-test-chain.git</span><br><span class="line">$ git push -u origin master</span><br></pre></td></tr></table></figure>
+
+<h3 id="设置超级管理员"><a href="#设置超级管理员" class="headerlink" title="设置超级管理员"></a>设置超级管理员</h3><p>超级管理员拉取最新配置，生成自己的账号，并将地址设置为为链的<code>admin</code>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">// 拉取最新的链的配置</span><br><span class="line">$ git clone git@gitee.com:cita-cloud/gitops-test-chain.git</span><br><span class="line">// 切换到新的分支</span><br><span class="line">$ cd gitops-test-chain</span><br><span class="line">$ git checkout -b set-admin</span><br><span class="line">$ cd ..</span><br><span class="line"></span><br><span class="line">// 生成admin账户并设置到链级配置中</span><br><span class="line">$ cloud-config new-account --chain-name gitops-test-chain</span><br><span class="line">key_id:1, address:4dafebf719f2a0439387a231977e5209fabb0cca</span><br><span class="line">$ cloud-config set-admin --chain-name gitops-test-chain --admin 4dafebf719f2a0439387a231977e5209fabb0cca</span><br><span class="line"></span><br><span class="line">// 提交修改</span><br><span class="line">$ cd gitops-test-chain</span><br><span class="line">$ git add .</span><br><span class="line">$ git commit -m &quot;set admin&quot;</span><br><span class="line">$ git push --set-upstream origin set-admin</span><br></pre></td></tr></table></figure>
+
+<p>创建<code>PR</code>:</p>
+<p><img src="/blockchain-with-gitops/set-admin.png"></p>
+<p>经过评审之后合并。</p>
+<h3 id="参与方1设置共识账户"><a href="#参与方1设置共识账户" class="headerlink" title="参与方1设置共识账户"></a>参与方1设置共识账户</h3><p>参与方1拉取最新配置，生成自己的共识账号，并将地址添加为链的<code>validator</code>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">// 拉取最新的链的配置</span><br><span class="line">$ git clone git@gitee.com:cita-cloud/gitops-test-chain.git</span><br><span class="line"></span><br><span class="line">// 切换到新的分支</span><br><span class="line">$ cd gitops-test-chain</span><br><span class="line">$ git checkout -b add-validator1</span><br><span class="line">$ cd ..</span><br><span class="line"></span><br><span class="line">// 生成共识账户并设置到链级配置中</span><br><span class="line">$ cloud-config new-account --chain-name gitops-test-chain</span><br><span class="line">key_id:1, address:a746b04e30709203d3c8aadcca31bb024bbcf5df</span><br><span class="line">$ cloud-config append-validator --chain-name gitops-test-chain --validator a746b04e30709203d3c8aadcca31bb024bbcf5df</span><br><span class="line"></span><br><span class="line">// 提交修改</span><br><span class="line">$ cd gitops-test-chain</span><br><span class="line">$ git add .</span><br><span class="line">$ git commit -m &quot;append validator1&quot;</span><br><span class="line">$ git push --set-upstream origin add-validator1</span><br></pre></td></tr></table></figure>
+
+<p>创建<code>PR</code>:</p>
+<p><img src="/blockchain-with-gitops/append-validator.png"></p>
+<p>经过评审之后合并。</p>
+<h3 id="参与方2设置共识账户"><a href="#参与方2设置共识账户" class="headerlink" title="参与方2设置共识账户"></a>参与方2设置共识账户</h3><p>参与方2拉取最新配置，生成自己的共识账号，并将地址添加为链的<code>validator</code>。</p>
+<p>操作同参与方1，这里不再赘述。</p>
+<h3 id="链的发起方关闭链级配置"><a href="#链的发起方关闭链级配置" class="headerlink" title="链的发起方关闭链级配置"></a>链的发起方关闭链级配置</h3><p>所有共识参与方都已经添加过共识账户。</p>
+<p>链的参与方将链级配置的<code>stage</code>设置为<code>finalize</code>。</p>
+<p>此后将无法添加共识账户。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">// 拉取最新的链的配置，并创建新的分支</span><br><span class="line">$ cd gitops-test-chain</span><br><span class="line">$ git checkout master</span><br><span class="line">$ git pull</span><br><span class="line">$ git checkout -b set-stage-finalize</span><br><span class="line">$ cd ..</span><br><span class="line"></span><br><span class="line">// 将链级配置的stage设置为finalize</span><br><span class="line">$ cloud-config set-stage --chain-name gitops-test-chain</span><br><span class="line"></span><br><span class="line">// 提交修改</span><br><span class="line">$ cd gitops-test-chain</span><br><span class="line">$ git add .</span><br><span class="line">$ git commit -m &quot;set stage finalize&quot;</span><br><span class="line">$ git push --set-upstream origin set-stage-finalize</span><br></pre></td></tr></table></figure>
+
+<p>创建<code>PR</code>:</p>
+<p><img src="/blockchain-with-gitops/final.png"></p>
+<p>经过评审之后合并。</p>
+<h3 id="参与方1添加节点网络信息"><a href="#参与方1添加节点网络信息" class="headerlink" title="参与方1添加节点网络信息"></a>参与方1添加节点网络信息</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">// 拉取最新的链的配置，并创建新的分支</span><br><span class="line">$ cd gitops-test-chain</span><br><span class="line">$ git checkout master</span><br><span class="line">$ git pull</span><br><span class="line">$ git checkout -b set-node0</span><br><span class="line">$ cd ..</span><br><span class="line"></span><br><span class="line">// 添加节点0的网络信息</span><br><span class="line">$ cloud-config append-node --chain-name gitops-test-chain --node www.node0.com:40000:node0:k8s</span><br><span class="line"></span><br><span class="line">// 提交修改</span><br><span class="line">$ cd gitops-test-chain</span><br><span class="line">$ git add .</span><br><span class="line">$ git commit -m &quot;set node0&quot;</span><br><span class="line">$ git push --set-upstream origin set-node0</span><br></pre></td></tr></table></figure>
+
+<p>创建<code>PR</code>:</p>
+<p><img src="/blockchain-with-gitops/set-node.png"></p>
+<p>经过评审之后合并。</p>
+<h3 id="参与方2添加节点网络信息"><a href="#参与方2添加节点网络信息" class="headerlink" title="参与方2添加节点网络信息"></a>参与方2添加节点网络信息</h3><p>操作同参与方1，这里不再赘述。</p>
+<h3 id="超级管理员创建CA证书"><a href="#超级管理员创建CA证书" class="headerlink" title="超级管理员创建CA证书"></a>超级管理员创建CA证书</h3><p>因为网络采用<code>network_tls</code>，因此需要创建链的<code>CA</code>证书，并为每个节点创建证书。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">// 拉取最新的链的配置，并创建新的分支</span><br><span class="line">$ cd gitops-test-chain</span><br><span class="line">$ git checkout master</span><br><span class="line">$ git pull</span><br><span class="line">$ git checkout -b create-ca</span><br><span class="line">$ cd ..</span><br><span class="line"></span><br><span class="line">// 创建CA证书</span><br><span class="line">$ cloud-config create-ca --chain-name gitops-test-chain</span><br><span class="line"></span><br><span class="line">// 提交修改</span><br><span class="line">$ cd gitops-test-chain</span><br><span class="line">$ git add .</span><br><span class="line">$ git commit -m &quot;create ca&quot;</span><br><span class="line">$ git push --set-upstream origin create-ca</span><br></pre></td></tr></table></figure>
+
+<p>创建<code>PR</code>:</p>
+<p><img src="/blockchain-with-gitops/create-ca.png"></p>
+<p>经过评审之后合并。</p>
+<h3 id="参与方1创建CSR"><a href="#参与方1创建CSR" class="headerlink" title="参与方1创建CSR"></a>参与方1创建CSR</h3><p>为了不暴露参与方证书的私钥信息，这里采用<code>Certificate Signing Request</code>的方式申请证书。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">// 拉取最新的链的配置，并创建新的分支</span><br><span class="line">$ cd gitops-test-chain</span><br><span class="line">$ git checkout master</span><br><span class="line">$ git pull</span><br><span class="line">$ git checkout -b create-csr-node0</span><br><span class="line">$ cd ..</span><br><span class="line"></span><br><span class="line">// 创建CA证书</span><br><span class="line">$ cloud-config create-csr --chain-name gitops-test-chain --domain node0</span><br><span class="line"></span><br><span class="line">// 提交修改</span><br><span class="line">$ cd gitops-test-chain</span><br><span class="line">$ git add .</span><br><span class="line">$ git commit -m &quot;create csr for node0&quot;</span><br><span class="line">$ git push --set-upstream origin create-csr-node0</span><br></pre></td></tr></table></figure>
+
+<p>创建<code>PR</code>:</p>
+<p><img src="/blockchain-with-gitops/create-csr.png"></p>
+<p>评审后合并。</p>
+<h3 id="参与方2创建CSR"><a href="#参与方2创建CSR" class="headerlink" title="参与方2创建CSR"></a>参与方2创建CSR</h3><p>操作同参与方1，这里不再赘述。</p>
+<h3 id="超级管理员处理CSR"><a href="#超级管理员处理CSR" class="headerlink" title="超级管理员处理CSR"></a>超级管理员处理CSR</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">// 拉取最新的链的配置，并创建新的分支</span><br><span class="line">$ cd gitops-test-chain</span><br><span class="line">$ git checkout master</span><br><span class="line">$ git pull</span><br><span class="line">$ git checkout -b sign-csr</span><br><span class="line">$ cd ..</span><br><span class="line"></span><br><span class="line">// 处理CSR，签名</span><br><span class="line">$ cloud-config sign-csr --chain-name gitops-test-chain --domain node0</span><br><span class="line">$ cloud-config sign-csr --chain-name gitops-test-chain --domain node1</span><br><span class="line"></span><br><span class="line">// 提交修改</span><br><span class="line">$ cd gitops-test-chain</span><br><span class="line">$ git add .</span><br><span class="line">$ git commit -m &quot;sign csr&quot;</span><br><span class="line">$ git push --set-upstream origin sign-csr</span><br></pre></td></tr></table></figure>
+
+<p>创建<code>PR</code>:</p>
+<p><img src="/blockchain-with-gitops/sign-csr.png"></p>
+<p>评审后合并。</p>
+<h2 id="节点配置"><a href="#节点配置" class="headerlink" title="节点配置"></a>节点配置</h2><h3 id="参与方1初始化节点"><a href="#参与方1初始化节点" class="headerlink" title="参与方1初始化节点"></a>参与方1初始化节点</h3><p>在内部的<code>GitLab</code>上创建节点配置仓库<code>gitops-test-chain-node0</code>。</p>
+<p>创建<code>read_write_access token</code>，记录<code>token</code>和同时创建的<code>bot</code>账户，方便后续在流水线中拉取和提交代码。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">// 拉取最新的链的配置</span><br><span class="line">$ cd gitops-test-chain</span><br><span class="line">$ git checkout master</span><br><span class="line">$ git pull</span><br><span class="line">$ cd ..</span><br><span class="line"></span><br><span class="line">// 初始化node0节点配置</span><br><span class="line">$ cloud-config init-node --chain-name gitops-test-chain --domain node0 --account a746b04e30709203d3c8aadcca31bb024bbcf5df</span><br><span class="line">// 生成node0节点配置文件</span><br><span class="line">$ cloud-config update-node --chain-name gitops-test-chain --domain node0</span><br><span class="line">// 生成node0资源清单</span><br><span class="line">$ cloud-config update-yaml --chain-name gitops-test-chain --domain node0 --storage-class nfs-client</span><br><span class="line"></span><br><span class="line">// 提交节点初始化配置</span><br><span class="line">$ cd gitops-test-chain-node0</span><br><span class="line">$ git init</span><br><span class="line">$ git add .</span><br><span class="line">$ git commit -m &quot;init node config&quot;</span><br><span class="line">$ git remote add origin https://project_xxx_bot:xxxxxxxx@git.XXX.com/xxx/gitops-test-chain-node0.git</span><br><span class="line">$ git push -u origin master</span><br></pre></td></tr></table></figure>
+
+<h3 id="参与方1设置流水线"><a href="#参与方1设置流水线" class="headerlink" title="参与方1设置流水线"></a>参与方1设置流水线</h3><p>在<code>Jekins</code>中创建新的流水线，设置源码为链级配置的仓库: <code>https://gitee.com/cita-cloud/gitops-test-chain.git</code>的<code>master</code>分支，并设置检出到子目录<code>gitops-test-chain</code>。</p>
+<p>设置<code>WebHook</code>的<code>token</code>并设置过滤条件，只在<code>master</code>分支有更新的时候才触发流水线。</p>
+<p>执行脚本类似前面的初始化节点配置：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">set +e</span><br><span class="line">rm -rf gitops-test-chain-node0</span><br><span class="line">git clone https://project_xxx_bot:xxxxxxxx@git.XXX.com/xxx/gitops-test-chain-node0.git</span><br><span class="line">docker run -i --rm -v `pwd`:`pwd` -w `pwd` citacloud/cloud-config:v6.4.0 cloud-config init-node --chain-name gitops-test-chain --domain node0 --account 6b9ac59d83e9d0744f6231d453e2b883b1819358</span><br><span class="line">docker run -i --rm -v `pwd`:`pwd` -w `pwd` citacloud/cloud-config:v6.4.0 cloud-config update-node --chain-name gitops-test-chain --domain node0</span><br><span class="line">docker run -i --rm -v `pwd`:`pwd` -w `pwd` citacloud/cloud-config:v6.4.0 cloud-config update-yaml --chain-name gitops-test-chain --domain node0 --storage-class nfs-client</span><br><span class="line">cd gitops-test-chain-node0</span><br><span class="line">git add .</span><br><span class="line">git commit -m &quot;update node0 config&quot;</span><br><span class="line">git push -u origin master</span><br></pre></td></tr></table></figure>
+
+<p>在链级配置的仓库中设置<code>WebHook</code>:</p>
+<p><img src="/blockchain-with-gitops/webhook.png"></p>
+<h3 id="参与方2初始化节点并设置流水线"><a href="#参与方2初始化节点并设置流水线" class="headerlink" title="参与方2初始化节点并设置流水线"></a>参与方2初始化节点并设置流水线</h3><p>操作同参与方1，这里不再赘述。</p>
+<h2 id="集群配置"><a href="#集群配置" class="headerlink" title="集群配置"></a>集群配置</h2><p>节点配置仓库到<code>k8s</code>集群的同步使用<code>ArgoCD</code>。</p>
+<p>安装和使用方法参见<a target="_blank" rel="noopener" href="https://argo-cd.readthedocs.io/en/stable/getting_started/">文档</a>。</p>
+<p>创建节点应用，并设置自动同步配置：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">argocd app create gitops-test-chain-node0 --repo https://project_xxx_bot:xxxxxxxx@git.XXX.com/xxx/gitops-test-chain-node0.git --path yamls --dest-server https://xxx.xxx.xxx.xxx:6443 --dest-namespace default --sync-policy auto</span><br><span class="line"></span><br><span class="line">argocd app create gitops-test-chain-node1 --repo https://project_yyy_bot:yyyyyyyy@git.YYY.com/yyy/gitops-test-chain-node1.git --path yamls --dest-server https://yyy.yyy.yyy.yyy:6443 --dest-namespace default --sync-policy auto</span><br></pre></td></tr></table></figure>
+
+<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><h3 id="参与方3添加节点网络信息"><a href="#参与方3添加节点网络信息" class="headerlink" title="参与方3添加节点网络信息"></a>参与方3添加节点网络信息</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">// 拉取最新的链的配置，并创建新的分支</span><br><span class="line">$ git clone git@gitee.com:cita-cloud/gitops-test-chain.git</span><br><span class="line">$ cd gitops-test-chain</span><br><span class="line">$ git checkout -b set-node2</span><br><span class="line">$ cd ..</span><br><span class="line"></span><br><span class="line">// 添加节点0的网络信息</span><br><span class="line">$ cloud-config append-node --chain-name gitops-test-chain --node www.node2.com:60000:node2:k8s</span><br><span class="line"></span><br><span class="line">// 提交修改</span><br><span class="line">$ cd gitops-test-chain</span><br><span class="line">$ git add .</span><br><span class="line">$ git commit -m &quot;set node2&quot;</span><br><span class="line">$ git push --set-upstream origin set-node2</span><br></pre></td></tr></table></figure>
+
+<p>创建<code>PR</code>:</p>
+<p><img src="/blockchain-with-gitops/add-node2.png"></p>
+<p>审核后合并。</p>
+<p>此后<code>node0</code>和<code>node1</code>会经由<code>WebHook</code>得知链的配置发生变更，并通过<code>Jenkins</code>流水线自动更新节点配置文件，再通过<code>Argocd</code>，自动将新配置应用到集群中。</p>
+<p>因为我们并没有真正的运行<code>node2</code>，所以<code>node0</code>和<code>node1</code>的<code>network</code>微服务应该会报连接错误，如下：</p>
+<pre><code> 2022-04-25T12:59:31.881922Z  INFO network::peer: connecting.. peer=gitops-test-chain-node2 host=gitops-test-chain-node2-nodeport port=40000                                                                │
+│ 2022-04-25T12:59:36.885651Z  INFO network::peer: connecting.. peer=gitops-test-chain-node2 host=gitops-test-chain-node2-nodeport port=40000
+</code></pre>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/use-loadbalancer-in-self-built-k8s-cluster/" rel="prev" title="在自建Kubernetes集群中创建LoadBalancer">
+                  <i class="fa fa-angle-left"></i> 在自建Kubernetes集群中创建LoadBalancer
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/k8s-service-account/" rel="next" title="在 Pod 中，访问 Kubernetes API 接口，并控制访问权限">
+                  在 Pod 中，访问 Kubernetes API 接口，并控制访问权限 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CITAHub</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">43k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">2:38</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://unpkg.com/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/pangu@4.0.7/dist/browser/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  <script src="https://unpkg.com/hexo-generator-searchdb@1.4.1/dist/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

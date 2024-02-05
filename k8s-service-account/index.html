@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"cita-cloud.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="问题描述在实际的应用场景中，我们的应用程序运行在集群中（以 Pod 的形式存在），并且该应用程序将在集群中进行创建资源、修改资源、删除资源等等操作。 在 Pod 中，访问 Kubernetes API 的方法有很多，而通过 Client Libraries（程序类库）是官方推荐的做法，也是我们接下来将要学习的方法。 该笔记将记录：在 Pod 中，通过 Client Libraries 访问 Kub">
+<meta property="og:type" content="article">
+<meta property="og:title" content="在 Pod 中，访问 Kubernetes API 接口，并控制访问权限">
+<meta property="og:url" content="https://cita-cloud.github.io/k8s-service-account/index.html">
+<meta property="og:site_name" content="CITAHub技术团队">
+<meta property="og:description" content="问题描述在实际的应用场景中，我们的应用程序运行在集群中（以 Pod 的形式存在），并且该应用程序将在集群中进行创建资源、修改资源、删除资源等等操作。 在 Pod 中，访问 Kubernetes API 的方法有很多，而通过 Client Libraries（程序类库）是官方推荐的做法，也是我们接下来将要学习的方法。 该笔记将记录：在 Pod 中，通过 Client Libraries 访问 Kub">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-05-13T04:06:40.000Z">
+<meta property="article:modified_time" content="2022-05-13T04:06:40.000Z">
+<meta property="article:author" content="CITAHub">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://cita-cloud.github.io/k8s-service-account/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://cita-cloud.github.io/k8s-service-account/","path":"k8s-service-account/","title":"在 Pod 中，访问 Kubernetes API 接口，并控制访问权限"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>在 Pod 中，访问 Kubernetes API 接口，并控制访问权限 | CITAHub技术团队</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">CITAHub技术团队</p>
+      <i class="logo-line"></i>
+    </a>
+      <img class="custom-logo-image" src="/uploads/citahub.jpg" alt="CITAHub技术团队">
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E6%8F%8F%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">问题描述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">2.</span> <span class="nav-text">解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC-1-%E6%AD%A5%E3%80%81%E5%88%9B%E5%BB%BA-ServiceAccount-%E8%B5%84%E6%BA%90"><span class="nav-number">2.1.</span> <span class="nav-text">第 1 步、创建 ServiceAccount 资源</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC-2-%E6%AD%A5%E3%80%81%E5%BC%95%E7%94%A8-ServiceAccount-%E8%B5%84%E6%BA%90"><span class="nav-number">2.2.</span> <span class="nav-text">第 2 步、引用 ServiceAccount 资源</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC-3-%E6%AD%A5%E3%80%81%E5%88%9B%E5%BB%BA-Role-%E8%B5%84%E6%BA%90"><span class="nav-number">2.3.</span> <span class="nav-text">第 3 步、创建 Role 资源</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC-4-%E6%AD%A5%E3%80%81%E5%B0%86-Role-%E4%B8%8E-ServiceAccount-%E7%BB%91%E5%AE%9A"><span class="nav-number">2.4.</span> <span class="nav-text">第 4 步、将 Role 与 ServiceAccount 绑定</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC-5-%E6%AD%A5%E3%80%81%E8%AE%BF%E9%97%AE-Kubernetes-API-%E6%B5%8B%E8%AF%95"><span class="nav-number">2.5.</span> <span class="nav-text">第 5 步、访问 Kubernetes API 测试</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC-6-%E6%AD%A5%E3%80%81%E9%80%9A%E8%BF%87%E5%AE%A2%E6%88%B7%E7%AB%AF%E7%B1%BB%E5%BA%93%E8%AE%BF%E9%97%AE%E9%9B%86%E7%BE%A4"><span class="nav-number">2.6.</span> <span class="nav-text">第 6 步、通过客户端类库访问集群</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A1%A5%E5%85%85%E8%AF%B4%E6%98%8E"><span class="nav-number">3.</span> <span class="nav-text">补充说明</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BF%E9%97%AE%E9%9B%86%E7%BE%A4%E7%BA%A7%E5%88%AB%E7%9A%84%E8%B5%84%E6%BA%90"><span class="nav-number">3.1.</span> <span class="nav-text">访问集群级别的资源</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%9A%E8%BF%87-ServiceAccount-%E7%94%9F%E6%88%90-Kubeconfig-%E7%9A%84%E6%96%B9%E6%B3%95"><span class="nav-number">3.2.</span> <span class="nav-text">通过 ServiceAccount 生成 Kubeconfig 的方法</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">4.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CITAHub</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">27</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/citahub" title="CITAHub仓库 → https:&#x2F;&#x2F;github.com&#x2F;citahub" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITAHub仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/cita-cloud" title="CITA-Cloud仓库 → https:&#x2F;&#x2F;github.com&#x2F;cita-cloud" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>CITA-Cloud仓库</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:contact@rivtower.com" title="E-Mail → mailto:contact@rivtower.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://talk.citahub.com/" title="论坛 → https:&#x2F;&#x2F;talk.citahub.com" rel="noopener me" target="_blank"><i class="fab fa-stack-overflow fa-fw"></i>论坛</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://docs.citahub.com/zh-CN/welcome" title="CITAHub文档 → https:&#x2F;&#x2F;docs.citahub.com&#x2F;zh-CN&#x2F;welcome" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITAHub文档</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://cita-cloud-docs.readthedocs.io/zh_CN/latest/" title="CITA-Cloud文档 → https:&#x2F;&#x2F;cita-cloud-docs.readthedocs.io&#x2F;zh_CN&#x2F;latest&#x2F;" rel="noopener me" target="_blank"><i class="fa fa-book fa-fw"></i>CITA-Cloud文档</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cita-cloud.github.io/k8s-service-account/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CITAHub">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="在 Pod 中，访问 Kubernetes API 接口，并控制访问权限 | CITAHub技术团队">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          在 Pod 中，访问 Kubernetes API 接口，并控制访问权限
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2022-05-13 12:06:40" itemprop="dateCreated datePublished" datetime="2022-05-13T12:06:40+08:00">2022-05-13</time>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>901</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>3 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>在实际的应用场景中，我们的应用程序运行在集群中（以 Pod 的形式存在），并且该应用程序将在集群中进行创建资源、修改资源、删除资源等等操作。</p>
+<p>在 Pod 中，访问 Kubernetes API 的方法有很多，而通过 Client Libraries（程序类库）是官方推荐的做法，也是我们接下来将要学习的方法。</p>
+<p>该笔记将记录：在 Pod 中，通过 Client Libraries 访问 Kubernetes API（管理 Kubernetes 集群）的方法，以及相关问题的解决办法。</p>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>接下来我们将介绍例如，如果创建 ServiceAccount 对应用程序进行访问控制，只允许其查看 Pod 资源（即查看 Pod 列表和详细信息）</p>
+<h3 id="第-1-步、创建-ServiceAccount-资源"><a href="#第-1-步、创建-ServiceAccount-资源" class="headerlink" title="第 1 步、创建 ServiceAccount 资源"></a>第 1 步、创建 ServiceAccount 资源</h3><p>而这其中最大的问题是，如何进行合理的授权，即对于既定的用户或应用程序，如何允许或拒绝特定的操作？—— 通过 ServiceAccount 实现。</p>
+<pre><code># kubectl create serviceaccount myappsa
+</code></pre>
+<h3 id="第-2-步、引用-ServiceAccount-资源"><a href="#第-2-步、引用-ServiceAccount-资源" class="headerlink" title="第 2 步、引用 ServiceAccount 资源"></a>第 2 步、引用 ServiceAccount 资源</h3><p>定义一个 Pod，使用为 myappsa 的 ServiceAccount 资源：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">kubectl apply -f - &lt;&lt;EOF</span><br><span class="line">kind: Pod</span><br><span class="line">apiVersion: v1</span><br><span class="line">metadata:</span><br><span class="line">  name: myapp</span><br><span class="line">spec:</span><br><span class="line">  serviceAccountName: myappsa</span><br><span class="line">  containers:</span><br><span class="line">  - name: main</span><br><span class="line">    image: bitnami/kubectl:latest</span><br><span class="line">    command:</span><br><span class="line">    - &quot;sleep&quot;</span><br><span class="line">    - &quot;infinity&quot;</span><br><span class="line">EOF</span><br></pre></td></tr></table></figure>
+
+<p>ServiceAccount 是种身份，而在 Pod 中引用 ServiceAccount 则是将这种身份赋予 Pod 实例。而接下来的任务是给 ServiceAccount 这种身份赋予各种权限 —— 具体的做法便是将各种角色（Role）绑定（RoleBinding）到这个身份（ServiceAccount）上。</p>
+<h3 id="第-3-步、创建-Role-资源"><a href="#第-3-步、创建-Role-资源" class="headerlink" title="第 3 步、创建 Role 资源"></a>第 3 步、创建 Role 资源</h3><p>定义名为 podreader 的 Role 资源，并定义其能够进行的访问操作：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">kubectl apply -f - &lt;&lt;EOF</span><br><span class="line">kind: Role</span><br><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">metadata:</span><br><span class="line">  name: podreader</span><br><span class="line">rules:</span><br><span class="line">  - apiGroups: [&quot;&quot;]</span><br><span class="line">    resources: [&quot;pods&quot;]</span><br><span class="line">    verbs: [&quot;get&quot;, &quot;list&quot;]</span><br><span class="line">EOF</span><br><span class="line"></span><br><span class="line"># 或，直接使用命令创建</span><br><span class="line"># kubectl create role podreader --verb=get --verb=list --resource=pods -n default</span><br></pre></td></tr></table></figure>
+
+<h3 id="第-4-步、将-Role-与-ServiceAccount-绑定"><a href="#第-4-步、将-Role-与-ServiceAccount-绑定" class="headerlink" title="第 4 步、将 Role 与 ServiceAccount 绑定"></a>第 4 步、将 Role 与 ServiceAccount 绑定</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">kubectl apply -f - &lt;&lt;EOF</span><br><span class="line">kind: RoleBinding</span><br><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">metadata:</span><br><span class="line">  name: podreaderbinding</span><br><span class="line">roleRef:</span><br><span class="line">  apiGroup: rbac.authorization.k8s.io</span><br><span class="line">  kind: Role</span><br><span class="line">  name: podreader</span><br><span class="line">subjects:</span><br><span class="line">  - kind: ServiceAccount</span><br><span class="line">    name: myappsa</span><br><span class="line">    namespace: default</span><br><span class="line">EOF</span><br><span class="line"></span><br><span class="line"># 或，从从命令行直接创建：</span><br><span class="line"># kubectl create rolebinding podreaderbinding --role=default:podreader --serviceaccount=default:myappsa --namesepace default -n default</span><br></pre></td></tr></table></figure>
+
+<h3 id="第-5-步、访问-Kubernetes-API-测试"><a href="#第-5-步、访问-Kubernetes-API-测试" class="headerlink" title="第 5 步、访问 Kubernetes API 测试"></a>第 5 步、访问 Kubernetes API 测试</h3><p>通过 Service Account 相关信息来访问资源：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"># 通过我们运行的 kubectl 容器访问</span><br><span class="line">kubectl get pods                                    # 这里是为了体现 kubectl 并未通过 kubeconfig 的信息来访问集群，</span><br><span class="line">                                                    # 而是通过 /var/run/secrets/kubernetes.io/serviceaccount 来访问集群</span><br><span class="line">                                                    # kubectl 手册介绍该命令是如何查找访问信息的；</span><br><span class="line"></span><br><span class="line"># 通过 curl API 访问</span><br><span class="line">APISERVER=https://kubernetes.default.svc</span><br><span class="line">SERVICEACCOUNT=/var/run/secrets/kubernetes.io/serviceaccount</span><br><span class="line">NAMESPACE=$(cat $&#123;SERVICEACCOUNT&#125;/namespace)</span><br><span class="line">TOKEN=$(cat $&#123;SERVICEACCOUNT&#125;/token)</span><br><span class="line">CACERT=$&#123;SERVICEACCOUNT&#125;/ca.crt</span><br><span class="line">curl --cacert $&#123;CACERT&#125; --header &quot;Authorization: Bearer $&#123;TOKEN&#125;&quot; -X GET $&#123;APISERVER&#125;/api/v1/namespaces/default/pods</span><br></pre></td></tr></table></figure>
+
+<h3 id="第-6-步、通过客户端类库访问集群"><a href="#第-6-步、通过客户端类库访问集群" class="headerlink" title="第 6 步、通过客户端类库访问集群"></a>第 6 步、通过客户端类库访问集群</h3><p>以 Java 客户端为例：</p>
+<p>如果需要在集群内部访问集群：<br>1）按照如上示例，定义 ServiceAccount 资源，<br>2）并参照 <a target="_blank" rel="noopener" href="https://github.com/kubernetes-client/java/blob/master/examples/examples-release-15/src/main/java/io/kubernetes/client/examples/InClusterClientExample.java">InClusterClientExample.java</a> 示例代码</p>
+<p>如果需要在集群外部访问集群：<br>1）按照如上示例，在远端集群定义 ServiceAccount 资源，<br>2）并参照 <a target="_blank" rel="noopener" href="https://github.com/kubernetes-client/java/blob/master/examples/examples-release-15/src/main/java/io/kubernetes/client/examples/KubeConfigFileClientExample.java%20">java&#x2F;KubeConfigFileClientExample.java</a> 示例代码</p>
+<h2 id="补充说明"><a href="#补充说明" class="headerlink" title="补充说明"></a>补充说明</h2><h3 id="访问集群级别的资源"><a href="#访问集群级别的资源" class="headerlink" title="访问集群级别的资源"></a>访问集群级别的资源</h3><p>上面是命名空间内的访问控制设置，因为上述使用的是 Role 和 RoleBinding 资源，而对于集群范围的访问控制应该使用 ClusterRole 和ClusterRoleBinding 命令。</p>
+<p>替换 kind 为 ClusterRole 及 ClusterRoleBinding 即可，其他部分与 Role、RoleBinding 类似，这里不再赘述。</p>
+<h3 id="通过-ServiceAccount-生成-Kubeconfig-的方法"><a href="#通过-ServiceAccount-生成-Kubeconfig-的方法" class="headerlink" title="通过 ServiceAccount 生成 Kubeconfig 的方法"></a>通过 ServiceAccount 生成 Kubeconfig 的方法</h3><p>如果需要使用 kubeconfig 文件，可通过 ServiceAccount 资源来创建，参考 <a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/47770676/how-to-create-a-kubectl-config-file-for-serviceaccount%20">How to create a kubectl config file for serviceaccount</a> 讨论。</p>
+<p>简而言之，kubeconfig 的 user 部分为 token，而非 client-certificate-data 与 client-key-data 参数。</p>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p><a target="_blank" rel="noopener" href="https://kubernetes.io/docs/tasks/run-application/access-api-from-pod/%20">Accessing the Kubernetes API from a Pod | Kubernetes</a><br><a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/59353819/how-to-bind-roles-with-service-accounts-kubernetes%20">dashboard - How to bind roles with service accounts - Kubernetes - Stack Overflow</a><br><a target="_blank" rel="noopener" href="https://www.baeldung.com/kubernetes-java-client%20">A Quick Intro to the Kubernetes Java Client | Baeldung</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/blockchain-with-gitops/" rel="prev" title="区块链与GitOps">
+                  <i class="fa fa-angle-left"></i> 区块链与GitOps
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/k8s-service-iptables/" rel="next" title="Kubernetes中的负载均衡原理————以iptables模式为例">
+                  Kubernetes中的负载均衡原理————以iptables模式为例 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CITAHub</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">43k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">2:38</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://unpkg.com/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/pangu@4.0.7/dist/browser/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  <script src="https://unpkg.com/hexo-generator-searchdb@1.4.1/dist/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>
