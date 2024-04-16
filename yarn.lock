@@ -684,7 +684,7 @@ hexo-theme-next@^8.19.1:
   version "8.19.1"
   resolved "https://registry.yarnpkg.com/hexo-theme-next/-/hexo-theme-next-8.19.1.tgz#9c9b7363ed41c3cf8d225ba265e80f1c19b77679"
 
-hexo-util@2.7.0, hexo-util@^2.0.0, hexo-util@^2.7.0:
+hexo-util@^2.0.0, hexo-util@^2.7.0:
   version "2.7.0"
   resolved "https://registry.yarnpkg.com/hexo-util/-/hexo-util-2.7.0.tgz#13d09292e79d260db35399710b3e19f3995443a3"
   dependencies:
@@ -709,12 +709,11 @@ hexo-util@^3.0.1, hexo-util@^3.1.0:
     prismjs "^1.29.0"
     strip-indent "^3.0.0"
 
-hexo-word-counter@^0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/hexo-word-counter/-/hexo-word-counter-0.1.0.tgz#68e37bfaab9de97d9b0577a2fdcd2bfb2b2a0248"
+hexo-word-counter@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/hexo-word-counter/-/hexo-word-counter-0.2.0.tgz#109ec89f339ee38d4ea8252b2f41cd0e585bc8c6"
   dependencies:
     cargo-cp-artifact "^0.1"
-    hexo-util "2.7.0"
 
 hexo@^7.1.1:
   version "7.1.1"
